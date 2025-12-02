@@ -42,7 +42,7 @@ export function LoginForm() {
     setIsSubmitting(true);
     // Simulate API call
     setTimeout(() => {
-      if (values.email === 'admin@konimba.com' && values.password === 'password') {
+      if (values.email === 'faubriciosanchez1@gmail.com' && values.password === 'M110710.m') {
         toast({
           title: 'Inicio de Sesión Exitoso',
           description: '¡Bienvenido de vuelta!',
@@ -70,7 +70,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="admin@konimba.com" {...field} />
+                <Input placeholder="faubriciosanchez1@gmail.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -86,7 +86,7 @@ export function LoginForm() {
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="password"
+                    placeholder="M110710.m"
                     {...field}
                   />
                   <Button
