@@ -1,6 +1,6 @@
 'use client';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 
 const data = [
   { name: 'Ene', total: Math.floor(Math.random() * 5000) + 1000 },
@@ -17,33 +17,42 @@ const data = [
   { name: 'Dic', total: Math.floor(Math.random() * 5000) + 1000 },
 ];
 
+const chartConfig = {
+  total: {
+    label: 'Total',
+    color: 'hsl(var(--primary))',
+  },
+} satisfies ChartConfig;
+
 export function OverviewChart() {
   return (
-    <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={data}>
-        <XAxis
-          dataKey="name"
-          stroke="hsl(var(--muted-foreground))"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-        />
-        <YAxis
-          stroke="hsl(var(--muted-foreground))"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-          tickFormatter={(value) => `$${value}`}
-        />
-        <Tooltip
-            cursor={{fill: 'hsl(var(--secondary))'}}
-            content={<ChartTooltipContent 
-                formatter={(value) => `$${value.toLocaleString()}`}
-                indicator="dot"
-            />}
-        />
-        <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <ChartContainer config={chartConfig} className="h-[350px] w-full">
+      <ResponsiveContainer>
+        <BarChart data={data}>
+          <XAxis
+            dataKey="name"
+            stroke="hsl(var(--muted-foreground))"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis
+            stroke="hsl(var(--muted-foreground))"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(value) => `$${value}`}
+          />
+          <Tooltip
+              cursor={{fill: 'hsl(var(--secondary))'}}
+              content={<ChartTooltipContent
+                  formatter={(value) => `$${value.toLocaleString()}`}
+                  indicator="dot"
+              />}
+          />
+          <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartContainer>
   );
 }
