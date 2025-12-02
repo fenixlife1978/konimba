@@ -11,9 +11,9 @@ export default function LoginPage() {
   return (
     <Card className="shadow-2xl shadow-black/10">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Welcome Back</CardTitle>
+        <CardTitle className="font-headline text-2xl">Bienvenido de Vuelta</CardTitle>
         <CardDescription>
-          Enter your credentials to access your account.
+          Ingresa tus credenciales para acceder a tu cuenta.
         </CardDescription>
       </CardHeader>
       <CardContent>

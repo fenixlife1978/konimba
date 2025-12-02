@@ -25,14 +25,14 @@ export const columns: ColumnDef<Offer>[] = [
           (table.getIsSomePageRowsSelected() && 'indeterminate')
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
+        aria-label="Seleccionar todo"
       />
     ),
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+        aria-label="Seleccionar fila"
       />
     ),
     enableSorting: false,
@@ -40,18 +40,18 @@ export const columns: ColumnDef<Offer>[] = [
   },
   {
     accessorKey: 'name',
-    header: 'Offer Name',
+    header: 'Nombre de la Oferta',
   },
   {
     accessorKey: 'platform',
-    header: 'Platform',
+    header: 'Plataforma',
   },
   {
     accessorKey: 'payout',
-    header: 'Payout',
+    header: 'Pago',
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue('payout'));
-      const formatted = new Intl.NumberFormat('en-US', {
+      const formatted = new Intl.NumberFormat('es-ES', {
         style: 'currency',
         currency: 'USD',
       }).format(amount);
@@ -61,7 +61,7 @@ export const columns: ColumnDef<Offer>[] = [
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: 'Estado',
     cell: ({ row }) => {
       const status = row.getValue('status') as string;
       const variant = {
@@ -80,8 +80,8 @@ export const columns: ColumnDef<Offer>[] = [
   },
   {
     accessorKey: 'startDate',
-    header: 'Start Date',
-    cell: ({ row }) => new Date(row.original.startDate).toLocaleDateString(),
+    header: 'Fecha de Inicio',
+    cell: ({ row }) => new Date(row.original.startDate).toLocaleDateString('es-ES'),
   },
   {
     id: 'actions',
@@ -92,17 +92,17 @@ export const columns: ColumnDef<Offer>[] = [
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">Abrir menú</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => alert(`Editing ${offer.name}`)}>
-                Edit Offer
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => alert(`Editando ${offer.name}`)}>
+                Editar Oferta
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => alert(`Pausing ${offer.name}`)}>
-                Pause Offer
+              <DropdownMenuItem onClick={() => alert(`Pausando ${offer.name}`)}>
+                Pausar Oferta
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -39,7 +39,7 @@ export default async function PaymentsPage() {
   
   return (
     <div>
-      <h1 className="text-3xl font-bold tracking-tight font-headline mb-6">Payments</h1>
+      <h1 className="text-3xl font-bold tracking-tight font-headline mb-6">Pagos</h1>
       <PaymentClient data={formattedPayments} />
     </div>
   );

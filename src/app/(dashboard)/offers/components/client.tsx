@@ -14,8 +14,8 @@ export const OfferClient: React.FC<OfferClientProps> = ({ data }) => {
     <>
       <div className="flex items-center justify-between mb-4">
         <div/>
-        <Button onClick={() => alert('Add new offer clicked!')}>
-          <Plus className="mr-2 h-4 w-4" /> Add New
+        <Button onClick={() => alert('¡Agregar nueva oferta!')}>
+          <Plus className="mr-2 h-4 w-4" /> Agregar Nueva
         </Button>
       </div>
       <DataTable searchKey="name" columns={columns} data={data} />

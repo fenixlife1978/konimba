@@ -28,7 +28,7 @@ export function AppHeader() {
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="Search everything..."
+          placeholder="Buscar todo..."
           className="w-full rounded-lg bg-secondary pl-8 md:w-[300px] lg:w-[400px]"
         />
       </div>
@@ -51,17 +51,17 @@ export function AppHeader() {
           <DropdownMenuSeparator />
           <DropdownMenuItem>
             <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
+            <span>Perfil</span>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+            <span>Configuración</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <Link href="/login" passHref>
             <DropdownMenuItem>
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              <span>Cerrar Sesión</span>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuContent>

@@ -17,58 +17,58 @@ export default function DashboardPage() {
   const totalRevenue = payments.reduce((acc, p) => acc + p.amount, 0);
   const totalPublishers = publishers.length;
   const totalPayments = payments.length;
-  const pendingPayments = payments.filter(p => p.status === 'Pending').length;
+  const pendingPayments = payments.filter(p => p.status === 'Pendiente').length;
 
   return (
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${totalRevenue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground">
-              Across all publishers
+              De todos los editores
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Publishers</CardTitle>
+            <CardTitle className="text-sm font-medium">Editores</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">+{totalPublishers}</div>
             <p className="text-xs text-muted-foreground">
-              Currently active and inactive
+              Actualmente activos e inactivos
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
+            <CardTitle className="text-sm font-medium">Pagos Totales</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">+{totalPayments}</div>
             <p className="text-xs text-muted-foreground">
-              Processed in the system
+              Procesados en el sistema
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
+            <CardTitle className="text-sm font-medium">Pagos Pendientes</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pendingPayments}</div>
             <p className="text-xs text-muted-foreground">
-              Awaiting processing
+              Esperando procesamiento
             </p>
           </CardContent>
         </Card>
@@ -76,7 +76,7 @@ export default function DashboardPage() {
       <div>
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle className="font-headline">Overview</CardTitle>
+            <CardTitle className="font-headline">Resumen</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
             <OverviewChart />

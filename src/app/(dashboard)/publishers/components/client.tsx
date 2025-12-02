@@ -14,8 +14,8 @@ export const PublisherClient: React.FC<PublisherClientProps> = ({ data }) => {
     <>
       <div className="flex items-center justify-between mb-4">
         <div/>
-        <Button onClick={() => alert('Add new publisher clicked!')}>
-          <Plus className="mr-2 h-4 w-4" /> Add New
+        <Button onClick={() => alert('¡Agregar nuevo editor!')}>
+          <Plus className="mr-2 h-4 w-4" /> Agregar Nuevo
         </Button>
       </div>
       <DataTable searchKey="name" columns={columns} data={data} />

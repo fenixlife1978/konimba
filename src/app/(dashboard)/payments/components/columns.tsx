@@ -35,14 +35,14 @@ export const columns: ColumnDef<Payment>[] = [
           (table.getIsSomePageRowsSelected() && 'indeterminate')
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
+        aria-label="Seleccionar todo"
       />
     ),
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+        aria-label="Seleccionar fila"
       />
     ),
     enableSorting: false,
@@ -50,7 +50,7 @@ export const columns: ColumnDef<Payment>[] = [
   },
   {
     accessorKey: 'publisherName',
-    header: 'Publisher',
+    header: 'Editor',
     cell: ({ row }) => {
       const { publisherName, publisherAvatarUrl } = row.original;
       const initials = publisherName.split(' ').map(n => n[0]).join('');
@@ -67,10 +67,10 @@ export const columns: ColumnDef<Payment>[] = [
   },
   {
     accessorKey: 'amount',
-    header: 'Amount',
+    header: 'Monto',
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue('amount'));
-      const formatted = new Intl.NumberFormat('en-US', {
+      const formatted = new Intl.NumberFormat('es-ES', {
         style: 'currency',
         currency: 'USD',
       }).format(amount);
@@ -80,18 +80,18 @@ export const columns: ColumnDef<Payment>[] = [
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: 'Estado',
     cell: ({ row }) => {
       const { status, isPotentiallyFraudulent, fraudulentReason } = row.original;
       const badgeVariant = {
-        Paid: 'secondary',
-        Pending: 'outline',
-        Failed: 'destructive',
+        Pagado: 'secondary',
+        Pendiente: 'outline',
+        Fallido: 'destructive',
       }[status] as 'secondary' | 'outline' | 'destructive';
       const colorClass = {
-        Paid: 'text-green-700 bg-green-100',
-        Pending: 'text-amber-700 bg-amber-100',
-        Failed: 'text-red-700 bg-red-100',
+        Pagado: 'text-green-700 bg-green-100',
+        Pendiente: 'text-amber-700 bg-amber-100',
+        Fallido: 'text-red-700 bg-red-100',
       }[status];
 
       return (
@@ -115,12 +115,12 @@ export const columns: ColumnDef<Payment>[] = [
   },
   {
     accessorKey: 'date',
-    header: 'Date',
-    cell: ({ row }) => new Date(row.original.date).toLocaleDateString(),
+    header: 'Fecha',
+    cell: ({ row }) => new Date(row.original.date).toLocaleDateString('es-ES'),
   },
   {
     id: 'receipt',
-    header: 'Receipt',
+    header: 'Recibo',
     cell: ({ row }) => {
         const { receiptUrl, id } = row.original;
         if (!receiptUrl) return <span className="text-muted-foreground">N/A</span>;
@@ -134,10 +134,10 @@ export const columns: ColumnDef<Payment>[] = [
                 </DialogTrigger>
                 <DialogContent className="max-w-3xl">
                     <DialogHeader>
-                        <DialogTitle>Receipt for Payment {id}</DialogTitle>
+                        <DialogTitle>Recibo para el Pago {id}</DialogTitle>
                     </DialogHeader>
                     <div className="relative mt-4 h-[70vh] w-full">
-                      <Image src={receiptUrl} alt={`Receipt for ${id}`} layout="fill" objectFit="contain" />
+                      <Image src={receiptUrl} alt={`Recibo para ${id}`} layout="fill" objectFit="contain" />
                     </div>
                 </DialogContent>
             </Dialog>
@@ -153,16 +153,16 @@ export const columns: ColumnDef<Payment>[] = [
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">Abrir menú</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => alert(`Marking ${payment.id} as paid`)}>
-                Mark as Paid
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => alert(`Marcando ${payment.id} como pagado`)}>
+                Marcar como Pagado
               </DropdownMenuItem>
-              <DropdownMenuItem>View Publisher</DropdownMenuItem>
+              <DropdownMenuItem>Ver Editor</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -27,14 +27,14 @@ export const columns: ColumnDef<Publisher>[] = [
           (table.getIsSomePageRowsSelected() && 'indeterminate')
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
+        aria-label="Seleccionar todo"
       />
     ),
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+        aria-label="Seleccionar fila"
       />
     ),
     enableSorting: false,
@@ -42,7 +42,7 @@ export const columns: ColumnDef<Publisher>[] = [
   },
   {
     accessorKey: 'name',
-    header: 'Publisher',
+    header: 'Editor',
     cell: ({ row }) => {
       const { name, email, avatarUrl } = row.original;
       const initials = name.split(' ').map(n => n[0]).join('');
@@ -62,11 +62,11 @@ export const columns: ColumnDef<Publisher>[] = [
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: 'Estado',
     cell: ({ row }) => {
       const status = row.getValue('status') as string;
       return (
-        <Badge variant={status === 'Active' ? 'secondary' : 'outline'} className={status === 'Active' ? 'text-green-700 bg-green-100' : ''}>
+        <Badge variant={status === 'Activo' ? 'secondary' : 'outline'} className={status === 'Activo' ? 'text-green-700 bg-green-100' : ''}>
           {status}
         </Badge>
       );
@@ -74,12 +74,12 @@ export const columns: ColumnDef<Publisher>[] = [
   },
   {
     accessorKey: 'paymentMethod',
-    header: 'Payment Method',
+    header: 'Método de Pago',
   },
   {
     accessorKey: 'joiningDate',
-    header: 'Joining Date',
-    cell: ({ row }) => new Date(row.original.joiningDate).toLocaleDateString(),
+    header: 'Fecha de Ingreso',
+    cell: ({ row }) => new Date(row.original.joiningDate).toLocaleDateString('es-ES'),
   },
   {
     id: 'actions',
@@ -91,20 +91,20 @@ export const columns: ColumnDef<Publisher>[] = [
             <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">Abrir menú</span>
                 <MoreHorizontal className="h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                 <DropdownMenuItem
                 onClick={() => navigator.clipboard.writeText(publisher.id)}
                 >
-                Copy publisher ID
+                Copiar ID del editor
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>View details</DropdownMenuItem>
-                <DropdownMenuItem>Edit publisher</DropdownMenuItem>
+                <DropdownMenuItem>Ver detalles</DropdownMenuItem>
+                <DropdownMenuItem>Editar editor</DropdownMenuItem>
             </DropdownMenuContent>
             </DropdownMenu>
         </div>

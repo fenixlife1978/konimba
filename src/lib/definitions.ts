@@ -3,8 +3,8 @@ export type Publisher = {
   name: string;
   email: string;
   avatarUrl: string;
-  paymentMethod: 'PayPal' | 'Bank Transfer' | 'Payoneer';
-  status: 'Active' | 'Inactive';
+  paymentMethod: 'PayPal' | 'Transferencia Bancaria' | 'Payoneer';
+  status: 'Activo' | 'Inactivo';
   joiningDate: string;
 };
 
@@ -13,7 +13,7 @@ export type Offer = {
   name: string;
   platform: string;
   payout: number;
-  status: 'Live' | 'Paused' | 'Expired';
+  status: 'Activa' | 'Pausada' | 'Expirada';
   startDate: string;
 };
 
@@ -25,7 +25,7 @@ export type Payment = {
   amount: number;
   currency: 'USD';
   date: string;
-  status: 'Paid' | 'Pending' | 'Failed';
+  status: 'Pagado' | 'Pendiente' | 'Fallido';
   receiptUrl?: string;
   isPotentiallyFraudulent?: boolean;
   fraudulentReason?: string;

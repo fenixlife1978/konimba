@@ -14,8 +14,8 @@ export const PaymentClient: React.FC<PaymentClientProps> = ({ data }) => {
     <>
       <div className="flex items-center justify-between mb-4">
         <div/>
-        <Button onClick={() => alert('Add new payment clicked!')}>
-          <Plus className="mr-2 h-4 w-4" /> Add New
+        <Button onClick={() => alert('¡Agregar nuevo pago!')}>
+          <Plus className="mr-2 h-4 w-4" /> Agregar Nuevo
         </Button>
       </div>
       <DataTable searchKey="publisherName" columns={columns} data={data} />

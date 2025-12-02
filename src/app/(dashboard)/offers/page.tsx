@@ -14,7 +14,7 @@ export default function OffersPage() {
   
   return (
     <div>
-      <h1 className="text-3xl font-bold tracking-tight font-headline mb-6">Offers & Campaigns</h1>
+      <h1 className="text-3xl font-bold tracking-tight font-headline mb-6">Ofertas y Campañas</h1>
       <OfferClient data={formattedOffers} />
     </div>
   );

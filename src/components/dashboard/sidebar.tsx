@@ -24,11 +24,11 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/publishers', icon: Users, label: 'Publishers' },
-  { href: '/offers', icon: Tag, label: 'Offers' },
-  { href: '/payments', icon: CreditCard, label: 'Payments' },
-  { href: '/reports', icon: LineChart, label: 'Reports' },
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
+  { href: '/publishers', icon: Users, label: 'Editores' },
+  { href: '/offers', icon: Tag, label: 'Ofertas' },
+  { href: '/payments', icon: CreditCard, label: 'Pagos' },
+  { href: '/reports', icon: LineChart, label: 'Informes' },
 ];
 
 export function AppSidebar() {
@@ -70,16 +70,16 @@ export function AppSidebar() {
       <SidebarFooter className="p-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Settings">
+            <SidebarMenuButton tooltip="Configuración">
               <Settings />
-              <span>Settings</span>
+              <span>Configuración</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <Link href="/login" passHref>
-                <SidebarMenuButton tooltip="Logout">
+                <SidebarMenuButton tooltip="Cerrar Sesión">
                     <LogOut />
-                    <span>Logout</span>
+                    <span>Cerrar Sesión</span>
                 </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>

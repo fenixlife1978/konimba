@@ -15,7 +15,7 @@ export default function PublishersPage() {
   
   return (
     <div>
-      <h1 className="text-3xl font-bold tracking-tight font-headline mb-6">Publishers</h1>
+      <h1 className="text-3xl font-bold tracking-tight font-headline mb-6">Editores</h1>
       <PublisherClient data={formattedPublishers} />
     </div>
   );

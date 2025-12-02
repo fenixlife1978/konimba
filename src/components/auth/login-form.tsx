@@ -20,8 +20,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email.' }),
-  password: z.string().min(1, { message: 'Password is required.' }),
+  email: z.string().email({ message: 'Por favor, introduce un email válido.' }),
+  password: z.string().min(1, { message: 'La contraseña es obligatoria.' }),
 });
 
 export function LoginForm() {
@@ -44,15 +44,15 @@ export function LoginForm() {
     setTimeout(() => {
       if (values.email === 'admin@konimba.com' && values.password === 'password') {
         toast({
-          title: 'Login Successful',
-          description: 'Welcome back!',
+          title: 'Inicio de Sesión Exitoso',
+          description: '¡Bienvenido de vuelta!',
         });
         router.push('/dashboard');
       } else {
         toast({
           variant: 'destructive',
-          title: 'Login Failed',
-          description: 'Invalid email or password. Please try again.',
+          title: 'Error de Inicio de Sesión',
+          description: 'Email o contraseña inválidos. Por favor, inténtalo de nuevo.',
         });
         form.reset();
       }
@@ -81,7 +81,7 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Contraseña</FormLabel>
               <FormControl>
                 <div className="relative">
                   <Input
@@ -105,7 +105,7 @@ export function LoginForm() {
           )}
         />
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? 'Signing In...' : 'Sign In'}
+          {isSubmitting ? 'Iniciando Sesión...' : 'Iniciar Sesión'}
         </Button>
       </form>
     </Form>
