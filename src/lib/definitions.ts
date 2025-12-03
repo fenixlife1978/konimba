@@ -8,7 +8,7 @@ export type Publisher = {
   phone: string;
   paymentMethod: 'PayPal' | 'Transferencia Bancaria' | 'Payoneer';
   paymentDetails: string;
-  createdAt: Timestamp;
+  createdAt: Timestamp | Date;
   avatarUrl?: string; // Made optional
   status?: 'Activo' | 'Inactivo'; // Made optional
 };
@@ -17,8 +17,8 @@ export type Offer = {
   id: string;
   name: string;
   platform: string;
-  startDate: Timestamp;
-  endDate: Timestamp;
+  startDate: Timestamp | Date;
+  endDate: Timestamp | Date;
   payout: number;
   currency: string;
   publisherId: string;
@@ -30,7 +30,7 @@ export type Payment = {
   publisherId: string;
   amount: number;
   currency: 'USD';
-  paymentDate: Timestamp;
+  paymentDate: Timestamp | Date;
   paymentMethod: string;
   receiptId?: string;
   notes?: string;
