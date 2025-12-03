@@ -26,7 +26,11 @@ const formSchema = z.object({
   password: z.string().min(1, { message: 'La contraseña es obligatoria.' }),
 });
 
-export function LoginForm() {
+interface LoginFormProps {
+  isAdmin?: boolean;
+}
+
+export function LoginForm({ isAdmin = false }: LoginFormProps) {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
@@ -36,10 +40,17 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: 'faubriciosanchez1@gmail.com',
-      password: 'M110710.m',
+      email: isAdmin ? 'faubriciosanchez1@gmail.com' : '',
+      password: isAdmin ? 'M110710.m' : '',
     },
   });
+
+  React.useEffect(() => {
+    form.reset({
+      email: isAdmin ? 'faubriciosanchez1@gmail.com' : '',
+      password: isAdmin ? 'M110710.m' : '',
+    });
+  }, [isAdmin, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth) {
@@ -80,7 +91,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="faubriciosanchez1@gmail.com" {...field} />
+                <Input placeholder={isAdmin ? "faubriciosanchez1@gmail.com" : "tu@email.com"} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -96,7 +107,7 @@ export function LoginForm() {
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="M110710.m"
+                    placeholder="Tu contraseña"
                     {...field}
                   />
                   <Button
@@ -106,7 +117,7 @@ export function LoginForm() {
                     className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? <EyeOff /> : <Eye />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </Button>
                 </div>
               </FormControl>
