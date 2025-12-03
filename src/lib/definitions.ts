@@ -11,10 +11,8 @@ export type Publisher = {
 export type Offer = {
   id: string;
   name: string;
-  platform: string;
   payout: number;
-  status: 'Activa' | 'Pausada' | 'Expirada';
-  startDate: string;
+  status: 'Activa' | 'Pausada' | 'Eliminada';
 };
 
 export type Payment = {

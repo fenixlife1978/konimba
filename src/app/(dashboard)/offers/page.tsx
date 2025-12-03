@@ -6,10 +6,8 @@ export default function OffersPage() {
   const formattedOffers: Offer[] = offers.map(item => ({
     id: item.id,
     name: item.name,
-    platform: item.platform,
     payout: item.payout,
     status: item.status,
-    startDate: item.startDate,
   }));
   
   return (

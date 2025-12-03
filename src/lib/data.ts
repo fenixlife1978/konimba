@@ -9,11 +9,11 @@ export const publishers: Publisher[] = [
 ];
 
 export const offers: Offer[] = [
-  { id: 'offer_1', name: 'Campaña de Venta de Verano', platform: 'AdPlatform X', payout: 500, status: 'Activa', startDate: '2023-06-01' },
-  { id: 'offer_2', name: 'Bonanza Q4', platform: 'AdPlatform Y', payout: 750, status: 'Activa', startDate: '2023-10-01' },
-  { id: 'offer_3', name: 'Aventura de Primavera', platform: 'AdPlatform X', payout: 400, status: 'Pausada', startDate: '2023-04-01' },
-  { id: 'offer_4', name: 'Explosión de Año Nuevo', platform: 'AdPlatform Z', payout: 1200, status: 'Expirada', startDate: '2023-01-01' },
-  { id: 'offer_5', name: 'Especial de Vacaciones', platform: 'AdPlatform Y', payout: 950, status: 'Activa', startDate: '2023-11-15' },
+  { id: 'offer_1', name: 'Campaña de Venta de Verano', payout: 500, status: 'Activa' },
+  { id: 'offer_2', name: 'Bonanza Q4', payout: 750, status: 'Activa' },
+  { id: 'offer_3', name: 'Aventura de Primavera', payout: 400, status: 'Pausada' },
+  { id: 'offer_4', name: 'Explosión de Año Nuevo', payout: 1200, status: 'Eliminada' },
+  { id: 'offer_5', name: 'Especial de Vacaciones', payout: 950, status: 'Activa' },
 ];
 
 const allPayments: PaymentWithHistory[] = [
