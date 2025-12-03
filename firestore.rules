@@ -1,0 +1,137 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model for the KonimPay application.
+ * Each user, representing a "Publisher", can only access and manage data that is explicitly
+ * associated with their own user ID. All access requires authentication.
+ *
+ * Data Structure: The data is primarily organized under a top-level `/publishers` collection.
+ * Each publisher's data, including their `offers` and `payments`, is nested within their
+ * specific document path (e.g., /publishers/{publisherId}/...). A separate `/receipts`
+ * collection exists, which requires special handling.
+ *
+ * Key Security Decisions:
+ * - User Enumeration Disabled: Listing documents in the top-level `/publishers` collection is
+ *   explicitly forbidden to prevent scraping of user information.
+ * - Strict Ownership: All subcollection data (offers, payments) inherits access control
+ *   from the parent publisher's ID, ensuring a user can only interact with their own data tree.
+ * - Failsafe for Ambiguous Ownership: The `/receipts` collection is currently locked down
+ *   because the data model lacks a `publisherId` field. This prevents unauthorized access
+ *   until the schema is updated to include this critical ownership link.
+ *
+ * Denormalization for Authorization: The rules rely on the `publisherId` field being present
+ * on documents within the subcollections (`offers`, `payments`). This denormalized field is
+ * validated against the path's `publisherId` on creation to ensure relational integrity
+ * and allow for fast, secure authorization without needing cross-document `get()` calls.
+ *
+ * Structural Segregation: The use of distinct collections (`/publishers`, `/receipts`) and
+ * user-specific subcollections (`/offers`, `/payments`) creates clear, secure boundaries
+ * for different data types, simplifying rules and list queries.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for reusable logic
+    /**
+     * isSignedIn
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * isOwner
+     * Checks if the authenticated user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * isExistingOwner
+     * Checks for ownership on an existing document. Used for update/delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * hasValidPublisherRelationOnCreate
+     * Validates that a new subcollection document correctly links back to its parent publisher.
+     */
+    function hasValidPublisherRelationOnCreate(publisherId) {
+      return request.resource.data.publisherId == publisherId;
+    }
+
+    /**
+     * isPublisherRelationImmutable
+     * Ensures the link to the parent publisher cannot be changed after creation.
+     */
+    function isPublisherRelationImmutable() {
+      return request.resource.data.publisherId == resource.data.publisherId;
+    }
+
+    /**
+     * @description Manages publisher profiles. Each user can manage only their own profile.
+     * @path /publishers/{publisherId}
+     * @allow A user (create)s their own profile document where `{publisherId}` matches their auth UID.
+     * @deny An authenticated user tries to (get) another user's profile document.
+     * @principle Enforces strict document ownership and prevents user enumeration.
+     */
+    match /publishers/{publisherId} {
+      allow get: if isOwner(publisherId);
+      allow list: if false;
+      allow create: if isOwner(publisherId) && request.resource.data.id == publisherId;
+      allow update: if isExistingOwner(publisherId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(publisherId);
+    }
+
+    /**
+     * @description Manages offers for a specific publisher. Access is tied to the parent publisher.
+     * @path /publishers/{publisherId}/offers/{offerId}
+     * @allow A user (create)s a new offer under their own publisher ID.
+     * @deny A user tries to (list) offers belonging to a different publisher.
+     * @principle Restricts access to a user's own data tree by checking the path.
+     */
+    match /publishers/{publisherId}/offers/{offerId} {
+      allow get: if isOwner(publisherId);
+      allow list: if isOwner(publisherId);
+      allow create: if isOwner(publisherId) && hasValidPublisherRelationOnCreate(publisherId);
+      allow update: if isExistingOwner(publisherId) && isPublisherRelationImmutable();
+      allow delete: if isExistingOwner(publisherId);
+    }
+
+    /**
+     * @description Manages payments for a specific publisher. Access is tied to the parent publisher.
+     * @path /publishers/{publisherId}/payments/{paymentId}
+     * @allow A user (get)s a payment document associated with their publisher ID.
+     * @deny A user tries to (update) a payment document for another publisher.
+     * @principle Restricts access to a user's own data tree by checking the path.
+     */
+    match /publishers/{publisherId}/payments/{paymentId} {
+      allow get: if isOwner(publisherId);
+      allow list: if isOwner(publisherId);
+      allow create: if isOwner(publisherId) && hasValidPublisherRelationOnCreate(publisherId);
+      allow update: if isExistingOwner(publisherId) && isPublisherRelationImmutable();
+      allow delete: if isExistingOwner(publisherId);
+    }
+
+    /**
+     * @description Manages payment receipts.
+     * @path /receipts/{receiptId}
+     * @allow (No operations allowed currently).
+     * @deny Any user attempting any operation on this collection.
+     * @principle Failsafe lockdown due to missing ownership data in the document schema.
+     */
+    match /receipts/{receiptId} {
+      // CRITICAL: Cannot implement secure rules for this collection. The 'Receipt'
+      // entity is missing a 'publisherId' field to associate it with an owner.
+      // To fix this, add a `publisherId` field to every receipt document.
+      allow get: if false; // TODO: Implement rule once schema contains an ownership field (e.g., `resource.data.publisherId`).
+      allow list: if false;
+      allow create: if false; // TODO: Implement rule, e.g., `request.resource.data.publisherId == request.auth.uid`.
+      allow update: if false; // TODO: Implement rule, e.g., `isOwner(resource.data.publisherId)`.
+      allow delete: if false; // TODO: Implement rule, e.g., `isOwner(resource.data.publisherId)`.
+    }
+  }
+}
