@@ -4,7 +4,7 @@ import { AppSidebar } from '@/components/dashboard/sidebar';
 import { AppHeader } from '@/components/dashboard/header';
 import { FirebaseClientProvider } from '@/firebase';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <FirebaseClientProvider>
       <SidebarProvider>

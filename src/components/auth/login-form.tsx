@@ -30,6 +30,8 @@ interface LoginFormProps {
   isAdmin?: boolean;
 }
 
+const ADMIN_EMAIL = 'faubriciosanchez1@gmail.com';
+
 export function LoginForm({ isAdmin = false }: LoginFormProps) {
   const router = useRouter();
   const auth = useAuth();
@@ -40,14 +42,14 @@ export function LoginForm({ isAdmin = false }: LoginFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: isAdmin ? 'faubriciosanchez1@gmail.com' : '',
+      email: isAdmin ? ADMIN_EMAIL : '',
       password: isAdmin ? 'M110710.m' : '',
     },
   });
 
   React.useEffect(() => {
     form.reset({
-      email: isAdmin ? 'faubriciosanchez1@gmail.com' : '',
+      email: isAdmin ? ADMIN_EMAIL : '',
       password: isAdmin ? 'M110710.m' : '',
     });
   }, [isAdmin, form]);
@@ -63,18 +65,53 @@ export function LoginForm({ isAdmin = false }: LoginFormProps) {
     }
     setIsSubmitting(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      // Role check before attempting sign-in
+      if (isAdmin && values.email !== ADMIN_EMAIL) {
+        throw new Error('Este no es un correo de administrador.');
+      }
+      if (!isAdmin && values.email === ADMIN_EMAIL) {
+        throw new Error('La cuenta de administrador no puede iniciar sesión como Publisher.');
+      }
+
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      
+      const userEmail = userCredential.user.email;
+      const isUserAdmin = userEmail === ADMIN_EMAIL;
+
+      // Post-login role validation
+      if (isAdmin && !isUserAdmin) {
+        await auth.signOut(); // Sign out the user
+        throw new Error('Credenciales inválidas para el rol de Administrador.');
+      }
+      
+      if (!isAdmin && isUserAdmin) {
+         await auth.signOut(); // Sign out the user
+        throw new Error('Credenciales de administrador no permitidas para el rol de Publisher.');
+      }
+
+
       toast({
         title: 'Inicio de Sesión Exitoso',
         description: '¡Bienvenido de vuelta!',
       });
-      router.push('/dashboard');
-    } catch (error) {
+      
+      // Redirect based on role
+      if (isUserAdmin) {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
+
+    } catch (error: any) {
       console.error("Error de inicio de sesión:", error);
+      let description = 'Email o contraseña inválidos. Por favor, inténtalo de nuevo.';
+      if (error.message.includes('administrador') || error.message.includes('Publisher')) {
+        description = error.message;
+      }
       toast({
         variant: 'destructive',
         title: 'Error de Inicio de Sesión',
-        description: 'Email o contraseña inválidos. Por favor, inténtalo de nuevo.',
+        description: description,
       });
     } finally {
       setIsSubmitting(false);
@@ -91,7 +128,7 @@ export function LoginForm({ isAdmin = false }: LoginFormProps) {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder={isAdmin ? "faubriciosanchez1@gmail.com" : "tu@email.com"} {...field} />
+                <Input placeholder={isAdmin ? ADMIN_EMAIL : "tu@email.com"} {...field} readOnly={isAdmin} />
               </FormControl>
               <FormMessage />
             </FormItem>
