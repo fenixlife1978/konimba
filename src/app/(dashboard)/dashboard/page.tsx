@@ -1,3 +1,4 @@
+'use client';
 import {
   Activity,
   CreditCard,
@@ -11,13 +12,27 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { OverviewChart } from '@/components/dashboard/overview-chart';
-import { payments, publishers } from '@/lib/data';
+import { useCollection } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
+import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
 
 export default function DashboardPage() {
-  const totalRevenue = payments.reduce((acc, p) => acc + p.amount, 0);
-  const totalPublishers = publishers.length;
-  const totalPayments = payments.length;
-  const pendingPayments = payments.filter(p => p.status === 'Pendiente').length;
+  const firestore = useFirestore();
+  const { user } = useUser();
+
+  const publishersRef = useMemoFirebase(() => firestore ? collection(firestore, 'publishers') : null, [firestore]);
+  const { data: publishers } = useCollection(publishersRef);
+
+  const paymentsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'publishers', user.uid, 'payments')) : null, [firestore, user]);
+  const { data: payments } = useCollection(paymentsQuery);
+
+  const totalRevenue = payments?.reduce((acc, p) => acc + p.amount, 0) || 0;
+  const totalPublishers = publishers?.length || 0;
+  const totalPayments = payments?.length || 0;
+  
+  // TODO: Add status to payment to calculate pending payments
+  const pendingPayments = 0;
+
 
   return (
     <div className="space-y-8">

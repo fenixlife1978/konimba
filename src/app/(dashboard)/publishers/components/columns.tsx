@@ -2,6 +2,7 @@
 
 import type { ColumnDef } from '@tanstack/react-table';
 import { MoreHorizontal } from 'lucide-react';
+import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -45,7 +46,7 @@ export const columns: ColumnDef<Publisher>[] = [
     header: 'Editor',
     cell: ({ row }) => {
       const { name, email, avatarUrl } = row.original;
-      const initials = name.split(' ').map(n => n[0]).join('');
+      const initials = name ? name.split(' ').map(n => n[0]).join('') : '';
       return (
         <div className="flex items-center gap-3">
           <Avatar>
@@ -77,9 +78,14 @@ export const columns: ColumnDef<Publisher>[] = [
     header: 'Método de Pago',
   },
   {
-    accessorKey: 'joiningDate',
+    accessorKey: 'createdAt',
     header: 'Fecha de Ingreso',
-    cell: ({ row }) => new Date(row.original.joiningDate).toLocaleDateString('es-ES'),
+    cell: ({ row }) => {
+      const date = row.original.createdAt;
+      // Firestore timestamps can be objects, so we need to convert them
+      const jsDate = date && typeof date.toDate === 'function' ? date.toDate() : new Date(date);
+      return format(jsDate, 'dd/MM/yyyy');
+    }
   },
   {
     id: 'actions',

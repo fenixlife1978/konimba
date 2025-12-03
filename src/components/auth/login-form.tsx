@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useAuth } from '@/firebase';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +28,7 @@ const formSchema = z.object({
 
 export function LoginForm() {
   const router = useRouter();
+  const auth = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
@@ -33,31 +36,38 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: 'faubriciosanchez1@gmail.com',
+      password: 'M110710.m',
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Error de Configuración',
+        description: 'El servicio de autenticación no está disponible.',
+      });
+      return;
+    }
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      if (values.email === 'faubriciosanchez1@gmail.com' && values.password === 'M110710.m') {
-        toast({
-          title: 'Inicio de Sesión Exitoso',
-          description: '¡Bienvenido de vuelta!',
-        });
-        router.push('/dashboard');
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error de Inicio de Sesión',
-          description: 'Email o contraseña inválidos. Por favor, inténtalo de nuevo.',
-        });
-        form.reset();
-      }
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      toast({
+        title: 'Inicio de Sesión Exitoso',
+        description: '¡Bienvenido de vuelta!',
+      });
+      router.push('/dashboard');
+    } catch (error) {
+      console.error("Error de inicio de sesión:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error de Inicio de Sesión',
+        description: 'Email o contraseña inválidos. Por favor, inténtalo de nuevo.',
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   }
 
   return (

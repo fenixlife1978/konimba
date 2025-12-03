@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import type { ColumnDef } from '@tanstack/react-table';
 import { MoreHorizontal, ShieldAlert, Receipt } from 'lucide-react';
+import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -114,9 +115,9 @@ export const columns: ColumnDef<Payment>[] = [
     },
   },
   {
-    accessorKey: 'date',
+    accessorKey: 'paymentDate',
     header: 'Fecha',
-    cell: ({ row }) => new Date(row.original.date).toLocaleDateString('es-ES'),
+    cell: ({ row }) => format(new Date(row.original.paymentDate), 'dd/MM/yyyy'),
   },
   {
     id: 'receipt',
@@ -137,7 +138,7 @@ export const columns: ColumnDef<Payment>[] = [
                         <DialogTitle>Recibo para el Pago {id}</DialogTitle>
                     </DialogHeader>
                     <div className="relative mt-4 h-[70vh] w-full">
-                      <Image src={receiptUrl} alt={`Recibo para ${id}`} layout="fill" objectFit="contain" />
+                      <Image src={receiptUrl} alt={`Recibo para ${id}`} fill objectFit="contain" />
                     </div>
                 </DialogContent>
             </Dialog>

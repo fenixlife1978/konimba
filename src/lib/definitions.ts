@@ -1,28 +1,42 @@
+import { Timestamp } from "firebase/firestore";
+
 export type Publisher = {
   id: string;
   name: string;
+  contactName: string;
   email: string;
-  avatarUrl: string;
+  phone: string;
   paymentMethod: 'PayPal' | 'Transferencia Bancaria' | 'Payoneer';
-  status: 'Activo' | 'Inactivo';
-  joiningDate: string;
+  paymentDetails: string;
+  createdAt: Timestamp;
+  avatarUrl?: string; // Made optional
+  status?: 'Activo' | 'Inactivo'; // Made optional
 };
 
 export type Offer = {
   id: string;
   name: string;
+  platform: string;
+  startDate: Timestamp;
+  endDate: Timestamp;
   payout: number;
-  status: 'Activa' | 'Pausada' | 'Eliminada';
+  currency: string;
+  publisherId: string;
+  status?: 'Activa' | 'Pausada' | 'Eliminada'; // Made optional
 };
 
 export type Payment = {
   id: string;
   publisherId: string;
-  publisherName: string;
-  publisherAvatarUrl: string;
   amount: number;
   currency: 'USD';
-  date: string;
+  paymentDate: Timestamp;
+  paymentMethod: string;
+  receiptId?: string;
+  notes?: string;
+  // For UI display, not in Firestore schema directly
+  publisherName?: string;
+  publisherAvatarUrl?: string;
   status: 'Pagado' | 'Pendiente' | 'Fallido';
   receiptUrl?: string;
   isPotentiallyFraudulent?: boolean;
@@ -32,9 +46,18 @@ export type Payment = {
 export type HistoricalPayment = {
   paymentAmount: number;
   paymentCurrency: 'USD';
-  paymentDate: string;
+  paymentDate: string | Date; // Allow Date object
 };
 
 export type PaymentWithHistory = Payment & {
-  historicalPaymentData: HistoricalPayment[];
+  historicalPaymentData?: HistoricalPayment[];
+};
+
+export type Receipt = {
+  id: string;
+  filename: string;
+  fileType: string;
+  fileSize: number;
+  uploadDate: Timestamp;
+  filePath: string;
 };

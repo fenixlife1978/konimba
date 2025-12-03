@@ -2,6 +2,7 @@ import React from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/dashboard/sidebar';
 import { AppHeader } from '@/components/dashboard/header';
+import { FirebaseClientProvider } from '@/firebase';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   // Get sidebar state from cookie
@@ -9,14 +10,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // const defaultLayout = layout ? JSON.parse(layout.value) : undefined;
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <main className="flex h-screen flex-col">
-        <AppHeader />
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          {children}
-        </div>
-      </main>
-    </SidebarProvider>
+    <FirebaseClientProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <main className="flex h-screen flex-col">
+          <AppHeader />
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            {children}
+          </div>
+        </main>
+      </SidebarProvider>
+    </FirebaseClientProvider>
   );
 }
