@@ -52,7 +52,7 @@ export type Payment = {
   amount: number;
   currency: 'USD';
   paymentDate: Timestamp | Date;
-  paymentMethod: string;
+  paymentMethod: 'PAYPAL' | 'BINANCE' | 'BOLIVARES' | 'PESOS COLOMBIANOS';
   receiptId?: string;
   notes?: string;
   // For UI display, not in Firestore schema directly
@@ -62,6 +62,9 @@ export type Payment = {
   receiptUrl?: string;
   isPotentiallyFraudulent?: boolean;
   fraudulentReason?: string;
+  exchangeRate?: number;
+  finalAmount?: number;
+  finalCurrency?: 'VES' | 'COP';
 };
 
 export type HistoricalPayment = {

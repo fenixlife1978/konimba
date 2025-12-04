@@ -25,6 +25,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useFirestore } from '@/firebase';
+import { addDoc, collection, doc, getDocs, query, serverTimestamp, where, writeBatch } from 'firebase/firestore';
+import { toast } from '@/hooks/use-toast';
 
 interface LeadClientProps {
   data: Lead[];
@@ -34,6 +37,71 @@ interface LeadClientProps {
 
 export const LeadClient: React.FC<LeadClientProps> = ({ data, publishers, offers }) => {
   const [open, setOpen] = useState(false);
+  const firestore = useFirestore();
+
+  const handleClosePeriod = async () => {
+    if (!firestore) return;
+    try {
+        // 1. Aggregate leads to calculate payment amounts per publisher
+        const paymentsToCreate: Record<string, { amount: number; publisher: Publisher; leads: Lead[] }> = {};
+
+        data.forEach(lead => {
+            const offer = offers.find(o => o.id === lead.offerId);
+            if (!offer) return;
+
+            const paymentAmount = lead.count * offer.payout;
+            const publisher = publishers.find(p => p.id === lead.publisherId);
+            if (!publisher) return;
+
+            if (!paymentsToCreate[lead.publisherId]) {
+                paymentsToCreate[lead.publisherId] = {
+                    amount: 0,
+                    publisher,
+                    leads: [],
+                };
+            }
+            paymentsToCreate[lead.publisherId].amount += paymentAmount;
+            paymentsToCreate[lead.publisherId].leads.push(lead);
+        });
+
+        // 2. Create payment documents in a batch
+        const batch = writeBatch(firestore);
+        const paymentsCollection = collection(firestore, 'payments');
+
+        for (const publisherId in paymentsToCreate) {
+            const paymentData = paymentsToCreate[publisherId];
+            const newPaymentRef = doc(paymentsCollection);
+            
+            batch.set(newPaymentRef, {
+                id: newPaymentRef.id,
+                publisherId: publisherId,
+                publisherName: paymentData.publisher.name,
+                publisherAvatarUrl: paymentData.publisher.avatarUrl || '',
+                amount: paymentData.amount,
+                currency: 'USD',
+                paymentDate: serverTimestamp(),
+                paymentMethod: paymentData.publisher.paymentMethod,
+                status: 'Pendiente',
+                notes: `Pago generado por cierre de periodo. Incluye ${paymentData.leads.length} registros de leads.`,
+            });
+        }
+
+        await batch.commit();
+
+        toast({
+            title: '¡Periodo Cerrado!',
+            description: `${Object.keys(paymentsToCreate).length} pagos han sido generados y están pendientes de procesamiento.`,
+        });
+
+    } catch (error) {
+        console.error("Error closing period:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'No se pudo cerrar el periodo y generar los pagos.',
+        });
+    }
+  };
 
   return (
     <>
@@ -43,21 +111,21 @@ export const LeadClient: React.FC<LeadClientProps> = ({ data, publishers, offers
                 <DateRangePicker />
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="outline">Cerrar Periodo</Button>
+                        <Button variant="outline">Cerrar Periodo y Generar Pagos</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
                         <AlertDialogTitle>¿Confirmar Cierre de Periodo?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Esta acción calculará los pagos para todos los publishers basados en los leads del periodo seleccionado. ¿Estás seguro de que quieres continuar?
+                            Esta acción calculará y generará los registros de pago para todos los publishers basados en los leads cargados en el periodo seleccionado. Los pagos se crearán en estado "Pendiente". ¿Estás seguro?
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
                         <AlertDialogAction
-                            onClick={() => alert('¡Periodo cerrado y pagos calculados! (Funcionalidad en desarrollo)')}
+                            onClick={handleClosePeriod}
                         >
-                            Confirmar Cierre
+                            Confirmar y Generar
                         </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

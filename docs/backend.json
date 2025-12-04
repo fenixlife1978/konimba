@@ -277,26 +277,6 @@
         }
       },
       {
-        "path": "/publishers/{publisherId}/payments/{paymentId}",
-        "definition": {
-          "entityName": "Payment",
-          "schema": {
-            "$ref": "#/backend/entities/Payment"
-          },
-          "description": "Stores payment information for each publisher. Uses publisherId to establish the relationship.",
-          "params": [
-            {
-              "name": "publisherId",
-              "description": "Unique identifier for the publisher."
-            },
-            {
-              "name": "paymentId",
-              "description": "Unique identifier for the payment."
-            }
-          ]
-        }
-      },
-      {
         "path": "/receipts/{receiptId}",
         "definition": {
           "entityName": "Receipt",
@@ -327,8 +307,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/payments/{paymentId}",
+        "definition": {
+          "entityName": "Payment",
+          "schema": {
+            "$ref": "#/backend/entities/Payment"
+          },
+          "description": "Stores payment information for each publisher. This is a top-level collection for admin management.",
+          "params": [
+            {
+              "name": "paymentId",
+              "description": "Unique identifier for the payment."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the KonimPay application, focusing on managing publishers, offers, payments, and receipts. The structure prioritizes Authorization Independence by avoiding hierarchical authorization dependencies (`get()`). All collections are designed to have homogeneous security requirements.\n\n**Authorization Independence and QAPs (Rules are not Filters):**\n\n*   The data structure uses explicit path-based ownership and segregation of data to enforce clear authorization boundaries. For example, publisher data is stored directly under the `/publishers` collection.\n*   This structure ensures that list operations are secure because rules can validate based on the current document's fields without needing to fetch data from parent documents or related collections.\n\n**Collection Structure:**\n\n*   **/publishers:** Stores publisher information.\n*   **/publishers/{publisherId}/offers:** Stores offers related to each publisher. The `publisherId` field in the offer document establishes the relationship. This enables efficient querying of offers for a specific publisher.\n*   **/publishers/{publisherId}/payments:** Stores payment information for each publisher.\n*   **/receipts/{receiptId}:** Stores receipts. Includes the `publisherId` field to link the receipt to a specific publisher.\n*   **/leads/{leadId}:** New top-level collection to store lead generation records. This flat structure simplifies administrative queries for reporting and lead management across all publishers and offers."
+    "reasoning": "The Firestore data structure is designed to support the KonimPay application, focusing on managing publishers, offers, payments, and receipts. The structure prioritizes Authorization Independence by avoiding hierarchical authorization dependencies (`get()`). All collections are designed to have homogeneous security requirements.\n\n**Authorization Independence and QAPs (Rules are not Filters):**\n\n*   The data structure uses explicit path-based ownership and segregation of data to enforce clear authorization boundaries. For example, publisher data is stored directly under the `/publishers` collection.\n*   This structure ensures that list operations are secure because rules can validate based on the current document's fields without needing to fetch data from parent documents or related collections.\n\n**Collection Structure:**\n\n*   **/publishers:** Stores publisher information.\n*   **/publishers/{publisherId}/offers:** Stores offers related to each publisher. The `publisherId` field in the offer document establishes the relationship. This enables efficient querying of offers for a specific publisher.\n*   **/receipts/{receiptId}:** Stores receipts. Includes the `publisherId` field to link the receipt to a specific publisher.\n*   **/leads/{leadId}:** New top-level collection to store lead generation records. This flat structure simplifies administrative queries for reporting and lead management across all publishers and offers.\n*   **/payments/{paymentId}:** A new top-level collection to store all generated payment records. This allows the administrator to query all payments across all publishers easily, while rules can still be enforced to allow publishers to only see their own."
   }
 }

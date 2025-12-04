@@ -109,6 +109,17 @@ service cloud.firestore {
         allow read, write: if isAdmin();
     }
 
+    /**
+     * @description Manages payments. Admin has full access. Publishers can only read their own payments.
+     * @path /payments/{paymentId}
+     * @allow Admin can do anything. Publishers can read payments where their ID matches.
+     * @deny Publishers cannot create, update, or delete payments. Listing all payments is forbidden for non-admins.
+     */
+    match /payments/{paymentId} {
+        allow read, write: if isAdmin();
+        allow list: if isAdmin();
+        allow get: if isOwner(resource.data.publisherId);
+    }
 
     /**
      * @description Manages payments for a specific publisher. Admin has full access. Access is tied to the parent publisher for others.

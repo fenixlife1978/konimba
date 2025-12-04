@@ -40,6 +40,7 @@ const adminNavItems = [
   { href: '/admin/publishers', icon: Users, label: 'Editores' },
   { href: '/admin/offers', icon: Tag, label: 'Ofertas Globales' },
   { href: '/admin/leads', icon: MousePointerClick, label: 'Gestión de Leads' },
+  { href: '/admin/payments', icon: CreditCard, label: 'Pagos' },
   { href: '/admin/reports', icon: LineChart, label: 'Informes' },
 ];
 
@@ -79,7 +80,7 @@ export function AppSidebar() {
             <Link href={item.href} passHref>
               <SidebarMenuButton
                 as="a"
-                isActive={pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin/dashboard')}
+                isActive={pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin/dashboard' || pathname.startsWith('/admin/payments') || pathname.startsWith('/admin/reports'))}
                 tooltip={item.label}
               >
                   <item.icon />
