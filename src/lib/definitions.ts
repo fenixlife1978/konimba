@@ -6,7 +6,13 @@ export type Publisher = {
   email: string;
   phone: string;
   paymentMethod: 'PAYPAL' | 'BINANCE' | 'BOLIVARES' | 'PESOS COLOMBIANOS';
-  paymentDetails: string;
+  paymentDetails: string; // For PAYPAL (email) or BINANCE (wallet)
+  country?: 'Venezuela' | 'Colombia';
+  bankName?: string;
+  accountNumber?: string;
+  accountType?: 'Ahorro' | 'Corriente';
+  accountHolderName?: string;
+  accountHolderId?: string;
   createdAt: Timestamp | Date;
   avatarUrl?: string; 
   status?: 'Activo' | 'Inactivo'; 

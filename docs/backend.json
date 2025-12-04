@@ -29,7 +29,33 @@
         },
         "paymentDetails": {
           "type": "string",
-          "description": "Payment details of the publisher, such as bank account number or PayPal email."
+          "description": "Payment details for non-bank methods, such as PayPal email or Binance wallet."
+        },
+        "country": {
+          "type": "string",
+          "description": "Country for bank transfer.",
+          "enum": ["Venezuela", "Colombia"]
+        },
+        "bankName": {
+          "type": "string",
+          "description": "Name of the bank for bank transfer."
+        },
+        "accountNumber": {
+          "type": "string",
+          "description": "Bank account number."
+        },
+        "accountType": {
+          "type": "string",
+          "description": "Type of bank account.",
+          "enum": ["Ahorro", "Corriente"]
+        },
+        "accountHolderName": {
+          "type": "string",
+          "description": "Name of the bank account holder."
+        },
+        "accountHolderId": {
+          "type": "string",
+          "description": "ID number of the bank account holder (e.g., Cédula, RIF)."
         },
         "createdAt": {
           "type": "string",
@@ -41,8 +67,7 @@
         "id",
         "name",
         "email",
-        "paymentMethod",
-        "paymentDetails"
+        "paymentMethod"
       ]
     },
     "Offer": {
