@@ -88,6 +88,17 @@ service cloud.firestore {
       allow update: if isExistingOwner(publisherId) && isPublisherRelationImmutable();
       allow delete: if isExistingOwner(publisherId);
     }
+    
+    /**
+     * @description Manages the global catalog of offers. Only admins can manage this collection.
+     * @path /global-offers/{offerId}
+     * @allow Admin can read and write.
+     * @deny Any non-admin user attempting any operation.
+     */
+    match /global-offers/{offerId} {
+      allow read, write: if isAdmin();
+    }
+
 
     /**
      * @description Manages payments for a specific publisher. Admin has full access. Access is tied to the parent publisher for others.

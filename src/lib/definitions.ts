@@ -25,6 +25,18 @@ export type Offer = {
   status?: 'Activa' | 'Pausada' | 'Eliminada'; // Made optional
 };
 
+export type GlobalOffer = {
+  id: string;
+  name: string;
+  platform: string;
+  startDate: Timestamp | Date;
+  endDate: Timestamp | Date;
+  payout: number;
+  currency: string;
+  status?: 'Activa' | 'Pausada' | 'Eliminada';
+};
+
+
 export type Payment = {
   id: string;
   publisherId: string;
