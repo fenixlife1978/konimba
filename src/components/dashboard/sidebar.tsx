@@ -32,6 +32,7 @@ const publisherNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
   { href: '/offers', icon: Tag, label: 'Ofertas' },
   { href: '/payments', icon: CreditCard, label: 'Pagos' },
+  { href: '/reports', icon: LineChart, label: 'Informes' },
 ];
 
 const adminNavItems = [
