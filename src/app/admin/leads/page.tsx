@@ -2,7 +2,9 @@
 import type { Lead, GlobalOffer, Publisher } from '@/lib/definitions';
 import { LeadClient } from './components/client';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
+import { useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 
 export default function AdminLeadsPage() {
   const firestore = useFirestore();
