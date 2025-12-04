@@ -17,7 +17,8 @@ import {
   Settings,
   LogOut,
   ChevronsRight,
-  ChevronsLeft
+  ChevronsLeft,
+  MousePointerSquare
 } from 'lucide-react';
 import { KonimPayLogo } from '../icons';
 import { usePathname } from 'next/navigation';
@@ -37,7 +38,7 @@ const adminNavItems = [
   { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Panel' },
   { href: '/admin/publishers', icon: Users, label: 'Editores' },
   { href: '/admin/offers', icon: Tag, label: 'Ofertas Globales' },
-  { href: '/admin/payments', icon: CreditCard, label: 'Pagos Globales' },
+  { href: '/admin/leads', icon: MousePointerSquare, label: 'Gestión de Leads' },
   { href: '/admin/reports', icon: LineChart, label: 'Informes' },
 ];
 
@@ -77,7 +78,7 @@ export function AppSidebar() {
             <Link href={item.href} passHref>
               <SidebarMenuButton
                 as="a"
-                isActive={pathname === item.href}
+                isActive={pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin/dashboard')}
                 tooltip={item.label}
               >
                   <item.icon />

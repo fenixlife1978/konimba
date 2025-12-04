@@ -99,6 +99,16 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    /**
+     * @description Manages lead tracking records. Only admins can create, read, and modify leads.
+     * @path /leads/{leadId}
+     * @allow Admin can read and write.
+     * @deny Any non-admin user attempting any operation.
+     */
+    match /leads/{leadId} {
+        allow read, write: if isAdmin();
+    }
+
 
     /**
      * @description Manages payments for a specific publisher. Admin has full access. Access is tied to the parent publisher for others.

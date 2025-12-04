@@ -35,6 +35,16 @@ export type GlobalOffer = {
   status: 'Activa' | 'Pausada' | 'Eliminada';
 };
 
+export type Lead = {
+  id: string;
+  publisherId: string;
+  offerId: string;
+  date: Timestamp | Date | string;
+  count: number;
+  publisherName?: string;
+  offerName?: string;
+};
+
 
 export type Payment = {
   id: string;
