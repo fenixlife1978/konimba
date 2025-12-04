@@ -9,8 +9,8 @@ export type Publisher = {
   paymentMethod: 'PayPal' | 'Transferencia Bancaria' | 'Payoneer';
   paymentDetails: string;
   createdAt: Timestamp | Date;
-  avatarUrl?: string; // Made optional
-  status?: 'Activo' | 'Inactivo'; // Made optional
+  avatarUrl?: string; 
+  status?: 'Activo' | 'Inactivo'; 
 };
 
 export type Offer = {
@@ -19,7 +19,7 @@ export type Offer = {
   payout: number;
   currency: string;
   publisherId: string;
-  status?: 'Activa' | 'Pausada' | 'Eliminada'; // Made optional
+  status: 'Activa' | 'Pausada' | 'Eliminada';
 };
 
 export type GlobalOffer = {
@@ -27,7 +27,7 @@ export type GlobalOffer = {
   name: string;
   payout: number;
   currency: string;
-  status?: 'Activa' | 'Pausada' | 'Eliminada';
+  status: 'Activa' | 'Pausada' | 'Eliminada';
 };
 
 

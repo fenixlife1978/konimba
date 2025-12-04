@@ -1,6 +1,6 @@
 'use client';
 import type { Publisher } from '@/lib/definitions';
-import { PublisherClient } from '@/app/(dashboard)/publishers/components/client';
+import { PublisherClient } from './components/client';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
