@@ -36,7 +36,7 @@ const publisherSchema = z.object({
   contactName: z.string().min(1, 'El nombre de contacto es requerido.'),
   email: z.string().email('Email inválido.'),
   phone: z.string().min(1, 'El teléfono es requerido.'),
-  paymentMethod: z.enum(['PayPal', 'Transferencia Bancaria', 'Payoneer']),
+  paymentMethod: z.enum(['PAYPAL', 'BINANCE', 'BOLIVARES', 'PESOS COLOMBIANOS']),
   paymentDetails: z.string().min(1, 'Los detalles de pago son requeridos.'),
   status: z.enum(['Activo', 'Inactivo']),
 });
@@ -65,7 +65,7 @@ export function PublisherForm({
         contactName: '',
         email: '',
         phone: '',
-        paymentMethod: 'PayPal' as const,
+        paymentMethod: 'PAYPAL' as const,
         paymentDetails: '',
         status: 'Activo' as const,
       };
@@ -188,9 +188,10 @@ export function PublisherForm({
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        <SelectItem value="PayPal">PayPal</SelectItem>
-                        <SelectItem value="Transferencia Bancaria">Transferencia Bancaria</SelectItem>
-                        <SelectItem value="Payoneer">Payoneer</SelectItem>
+                        <SelectItem value="PAYPAL">PAYPAL</SelectItem>
+                        <SelectItem value="BINANCE">BINANCE</SelectItem>
+                        <SelectItem value="BOLIVARES">BOLIVARES</SelectItem>
+                        <SelectItem value="PESOS COLOMBIANOS">PESOS COLOMBIANOS</SelectItem>
                     </SelectContent>
                     </Select>
                     <FormMessage />
@@ -204,7 +205,7 @@ export function PublisherForm({
                     <FormItem>
                     <FormLabel>Detalles de Pago</FormLabel>
                     <FormControl>
-                        <Input placeholder="Email de PayPal, cuenta bancaria, etc." {...field} disabled={isLoading} />
+                        <Input placeholder="Email, wallet, CBU, etc." {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -219,7 +220,7 @@ export function PublisherForm({
               <FormItem>
                 <FormLabel>Estado</FormLabel>
                 <Select
-                  onValueChange={field.onChange}
+                  onValuechange={field.onChange}
                   defaultValue={field.value}
                   disabled={isLoading}
                 >

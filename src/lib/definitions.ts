@@ -6,7 +6,7 @@ export type Publisher = {
   contactName: string;
   email: string;
   phone: string;
-  paymentMethod: 'PayPal' | 'Transferencia Bancaria' | 'Payoneer';
+  paymentMethod: 'PAYPAL' | 'BINANCE' | 'BOLIVARES' | 'PESOS COLOMBIANOS';
   paymentDetails: string;
   createdAt: Timestamp | Date;
   avatarUrl?: string; 
