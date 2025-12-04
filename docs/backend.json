@@ -14,10 +14,6 @@
           "type": "string",
           "description": "Name of the publisher."
         },
-        "contactName": {
-          "type": "string",
-          "description": "Contact person's name at the publisher."
-        },
         "email": {
           "type": "string",
           "description": "Email address of the publisher.",

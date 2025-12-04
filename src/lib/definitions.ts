@@ -3,7 +3,6 @@ import { Timestamp } from "firebase/firestore";
 export type Publisher = {
   id: string;
   name: string;
-  contactName: string;
   email: string;
   phone: string;
   paymentMethod: 'PAYPAL' | 'BINANCE' | 'BOLIVARES' | 'PESOS COLOMBIANOS';

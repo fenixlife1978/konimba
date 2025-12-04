@@ -33,7 +33,6 @@ import { useState } from 'react';
 
 const publisherSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido.'),
-  contactName: z.string().min(1, 'El nombre de contacto es requerido.'),
   email: z.string().email('Email inválido.'),
   phone: z.string().min(1, 'El teléfono es requerido.'),
   paymentMethod: z.enum(['PAYPAL', 'BINANCE', 'BOLIVARES', 'PESOS COLOMBIANOS']),
@@ -62,7 +61,6 @@ export function PublisherForm({
       }
     : {
         name: '',
-        contactName: '',
         email: '',
         phone: '',
         paymentMethod: 'PAYPAL' as const,
@@ -112,26 +110,12 @@ export function PublisherForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
+        <FormField
             control={form.control}
             name="name"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nombre del Editor</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ej. Acme Inc." {...field} disabled={isLoading} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="contactName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nombre del Contacto</FormLabel>
                 <FormControl>
                   <Input placeholder="Ej. Juan Pérez" {...field} disabled={isLoading} />
                 </FormControl>
@@ -139,7 +123,6 @@ export function PublisherForm({
               </FormItem>
             )}
           />
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
@@ -149,7 +132,7 @@ export function PublisherForm({
                 <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                    <Input type="email" placeholder="contacto@acme.com" {...field} disabled={isLoading} />
+                    <Input type="email" placeholder="juan.perez@email.com" {...field} disabled={isLoading} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
