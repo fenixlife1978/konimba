@@ -1,4 +1,3 @@
-// This is a new file
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,13 +21,14 @@ import type { CompanyProfile } from '@/lib/definitions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import Image from 'next/image';
 
 const settingsSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido.'),
   phone: z.string().min(1, 'El teléfono es requerido.'),
   country: z.string().min(1, 'El país es requerido.'),
   address: z.string().min(1, 'La dirección es requerida.'),
-  logoUrl: z.string().url('Debe ser una URL válida.'),
+  logoUrl: z.string().min(1, 'El logo es requerido.'),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -37,6 +38,7 @@ export function SettingsForm() {
   const settingsRef = doc(firestore, 'company_profile', 'settings');
   const { data: initialData, isLoading: isDataLoading } = useDoc<CompanyProfile>(settingsRef);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -52,8 +54,32 @@ export function SettingsForm() {
   useEffect(() => {
     if (initialData) {
       form.reset(initialData);
+      if (initialData.logoUrl) {
+        setLogoPreview(initialData.logoUrl);
+      }
     }
   }, [initialData, form]);
+
+  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type === 'image/png' || file.type === 'image/jpeg') {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          form.setValue('logoUrl', base64String);
+          setLogoPreview(base64String);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        toast({
+            variant: 'destructive',
+            title: 'Formato de archivo no válido',
+            description: 'Por favor, sube un archivo PNG o JPG.',
+        });
+      }
+    }
+  };
 
   const onSubmit = async (data: SettingsFormValues) => {
     setIsSubmitting(true);
@@ -167,10 +193,26 @@ export function SettingsForm() {
               name="logoUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>URL del Logotipo</FormLabel>
+                  <FormLabel>Logotipo de la Empresa</FormLabel>
+                  {logoPreview && (
+                    <div className="mt-2 p-4 border rounded-md flex justify-center items-center bg-muted/50 h-32">
+                        <div className="relative h-24 w-48">
+                            <Image src={logoPreview} alt="Vista previa del logo" fill style={{objectFit: 'contain'}} />
+                        </div>
+                    </div>
+                  )}
                   <FormControl>
-                    <Input type="url" placeholder="https://example.com/logo.png" {...field} disabled={isSubmitting} />
+                     <Input 
+                        type="file" 
+                        accept="image/png, image/jpeg"
+                        onChange={handleLogoChange}
+                        disabled={isSubmitting} 
+                        className='pt-2'
+                      />
                   </FormControl>
+                  <FormDescription>
+                    Sube un archivo PNG o JPG. La imagen se mostrará en toda la aplicación.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
