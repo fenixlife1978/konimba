@@ -18,7 +18,7 @@ import {
   LogOut,
   ChevronsRight,
   ChevronsLeft,
-  MousePointerSquare
+  MousePointerClick
 } from 'lucide-react';
 import { KonimPayLogo } from '../icons';
 import { usePathname } from 'next/navigation';
@@ -38,7 +38,7 @@ const adminNavItems = [
   { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Panel' },
   { href: '/admin/publishers', icon: Users, label: 'Editores' },
   { href: '/admin/offers', icon: Tag, label: 'Ofertas Globales' },
-  { href: '/admin/leads', icon: MousePointerSquare, label: 'Gestión de Leads' },
+  { href: '/admin/leads', icon: MousePointerClick, label: 'Gestión de Leads' },
   { href: '/admin/reports', icon: LineChart, label: 'Informes' },
 ];
 
