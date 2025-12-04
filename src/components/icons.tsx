@@ -1,23 +1,35 @@
 'use client';
-import { SVGProps, useEffect, useState, useMemo } from "react";
+import { SVGProps, useEffect, useState } from "react";
 import Image from "next/image";
-import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import type { CompanyProfile } from "@/lib/definitions";
 import { doc } from "firebase/firestore";
 
 export function KonimPayLogo(props: SVGProps<SVGSVGElement> & { className?: string }) {
   const firestore = useFirestore();
-  const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'company_profile', 'settings') : null, [firestore]);
-  const { data: companyProfile } = useDoc<CompanyProfile>(settingsRef);
+  const { user, isUserLoading } = useUser();
+  
+  // Only create the ref if the user is authenticated
+  const settingsRef = useMemoFirebase(() => {
+    if (firestore && user) {
+      return doc(firestore, 'company_profile', 'settings');
+    }
+    return null;
+  }, [firestore, user]);
+
+  const { data: companyProfile, isLoading: isProfileLoading } = useDoc<CompanyProfile>(settingsRef);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    // This check is to prevent hydration errors.
-    // The logo URL is only available on the client after Firebase has loaded.
-    if (companyProfile?.logoUrl) {
+    // We only set the logo URL if a user is loaded and the company profile has a logoUrl.
+    if (user && !isProfileLoading && companyProfile?.logoUrl) {
       setLogoUrl(companyProfile.logoUrl);
     }
-  }, [companyProfile]);
+    // If there's no user, we ensure we don't show a custom logo.
+    if (!user && !isUserLoading) {
+      setLogoUrl(null);
+    }
+  }, [companyProfile, user, isUserLoading, isProfileLoading]);
 
   // If a custom logo URL is available from settings, render it as an Image.
   if (logoUrl) {
