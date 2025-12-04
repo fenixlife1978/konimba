@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useFirestore, useDoc } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import type { CompanyProfile } from '@/lib/definitions';
@@ -35,7 +35,7 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export function SettingsForm() {
   const firestore = useFirestore();
-  const settingsRef = doc(firestore, 'company_profile', 'settings');
+  const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'company_profile', 'settings') : null, [firestore]);
   const { data: initialData, isLoading: isDataLoading } = useDoc<CompanyProfile>(settingsRef);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -82,6 +82,7 @@ export function SettingsForm() {
   };
 
   const onSubmit = async (data: SettingsFormValues) => {
+    if (!settingsRef) return;
     setIsSubmitting(true);
     try {
       await setDoc(settingsRef, data, { merge: true });
