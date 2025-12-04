@@ -16,9 +16,6 @@ export type Publisher = {
 export type Offer = {
   id: string;
   name: string;
-  platform: string;
-  startDate: Timestamp | Date;
-  endDate: Timestamp | Date;
   payout: number;
   currency: string;
   publisherId: string;
@@ -28,9 +25,6 @@ export type Offer = {
 export type GlobalOffer = {
   id: string;
   name: string;
-  platform: string;
-  startDate: Timestamp | Date;
-  endDate: Timestamp | Date;
   payout: number;
   currency: string;
   status?: 'Activa' | 'Pausada' | 'Eliminada';

@@ -63,20 +63,6 @@
           "type": "string",
           "description": "Name of the offer or campaign."
         },
-        "platform": {
-          "type": "string",
-          "description": "Platform on which the offer is running (e.g., Google Ads, Facebook Ads)."
-        },
-        "startDate": {
-          "type": "string",
-          "description": "Start date of the offer.",
-          "format": "date-time"
-        },
-        "endDate": {
-          "type": "string",
-          "description": "End date of the offer.",
-          "format": "date-time"
-        },
         "payout": {
           "type": "number",
           "description": "Payout amount for the offer."
@@ -93,9 +79,6 @@
       "required": [
         "id",
         "name",
-        "platform",
-        "startDate",
-        "endDate",
         "payout",
         "currency",
         "publisherId"
