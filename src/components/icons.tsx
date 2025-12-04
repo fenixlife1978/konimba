@@ -1,13 +1,13 @@
 'use client';
-import { SVGProps, useEffect, useState } from "react";
+import { SVGProps, useEffect, useState, useMemo } from "react";
 import Image from "next/image";
-import { useDoc, useFirestore } from "@/firebase";
+import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import type { CompanyProfile } from "@/lib/definitions";
 import { doc } from "firebase/firestore";
 
 export function KonimPayLogo(props: SVGProps<SVGSVGElement> & { className?: string }) {
   const firestore = useFirestore();
-  const settingsRef = doc(firestore, 'company_profile', 'settings');
+  const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'company_profile', 'settings') : null, [firestore]);
   const { data: companyProfile } = useDoc<CompanyProfile>(settingsRef);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
