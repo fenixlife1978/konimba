@@ -12,9 +12,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { OverviewChart } from '@/components/dashboard/overview-chart';
-import { useCollection } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
-import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -23,7 +22,7 @@ export default function DashboardPage() {
   const publishersRef = useMemoFirebase(() => firestore ? collection(firestore, 'publishers') : null, [firestore]);
   const { data: publishers } = useCollection(publishersRef);
 
-  const paymentsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'publishers', user.uid, 'payments')) : null, [firestore, user]);
+  const paymentsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'publishers', user.uid, 'payments')) : null, [firestore, user]);
   const { data: payments } = useCollection(paymentsQuery);
 
   const totalRevenue = payments?.reduce((acc, p) => acc + p.amount, 0) || 0;

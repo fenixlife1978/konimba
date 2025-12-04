@@ -1,4 +1,3 @@
-// This is a new file
 'use client';
 import type { Payment } from '@/lib/definitions';
 import { PaymentClient } from './components/client';

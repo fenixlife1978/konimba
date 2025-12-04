@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 export default function PaymentsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
-  const paymentsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'publishers', user.uid, 'payments')) : null, [firestore, user]);
+  const paymentsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'publishers', user.uid, 'payments')) : null, [firestore, user]);
   const { data: payments, isLoading } = useCollection<PaymentWithHistory>(paymentsQuery);
   const [paymentsWithFraudCheck, setPaymentsWithFraudCheck] = useState<Payment[]>([]);
 
@@ -19,13 +19,13 @@ export default function PaymentsPage() {
       const processPayments = async () => {
         const checkedPayments = await Promise.all(
           payments.map(async (payment) => {
-            const historicalData = payment.historicalPaymentData?.map(p => ({...p, paymentDate: format(p.paymentDate, 'yyyy-MM-dd')})) || [];
+            const historicalData = payment.historicalPaymentData?.map(p => ({...p, paymentDate: format(new Date(p.paymentDate), 'yyyy-MM-dd')})) || [];
             
             const fraudCheckResult = await flagPotentiallyFraudulentPayments({
               publisherId: payment.publisherId,
               paymentAmount: payment.amount,
               paymentCurrency: payment.currency,
-              paymentDate: format(payment.paymentDate, 'yyyy-MM-dd'),
+              paymentDate: format(new Date(payment.paymentDate), 'yyyy-MM-dd'),
               historicalPaymentData: historicalData,
             });
 

@@ -6,7 +6,7 @@ import { collection, query } from 'firebase/firestore';
 export default function OffersPage() {
   const firestore = useFirestore();
   const { user } = useUser();
-  const offersQuery = useMemoFirebase(() => user ? query(collection(firestore, 'publishers', user.uid, 'offers')) : null, [firestore, user]);
+  const offersQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'publishers', user.uid, 'offers')) : null, [firestore, user]);
   const { data: offers, isLoading } = useCollection(offersQuery);
 
   if (isLoading) {

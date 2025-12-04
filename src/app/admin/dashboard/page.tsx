@@ -12,9 +12,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { OverviewChart } from '@/components/dashboard/overview-chart';
-import { useCollection } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, getDocs } from 'firebase/firestore';
-import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import React from 'react';
 import type { GlobalOffer, Lead, Publisher } from '@/lib/definitions';
 
@@ -55,18 +54,20 @@ export default function AdminDashboardPage() {
             }, 0);
         }
 
-        // Keep existing logic for total payments and pending payments for now
-        for (const publisher of publishers) {
-          const paymentsRef = collection(firestore, 'publishers', publisher.id, 'payments');
-          const paymentsSnapshot = await getDocs(paymentsRef);
-          paymentsSnapshot.forEach(doc => {
-            const payment = doc.data();
-            totalPayments++;
-            if (payment.status === 'Pendiente') {
-              pendingPayments++;
-            }
-          });
+        if (publishers && firestore) {
+          for (const publisher of publishers) {
+            const paymentsRef = collection(firestore, 'publishers', publisher.id, 'payments');
+            const paymentsSnapshot = await getDocs(paymentsRef);
+            paymentsSnapshot.forEach(doc => {
+              const payment = doc.data();
+              totalPayments++;
+              if (payment.status === 'Pendiente') {
+                pendingPayments++;
+              }
+            });
+          }
         }
+
 
         setStats({
           totalPaymentForPeriod,
