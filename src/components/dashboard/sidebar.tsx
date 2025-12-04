@@ -61,6 +61,8 @@ export function AppSidebar() {
     }
   };
 
+  const settingsHref = isAdmin ? '/admin/settings' : '/settings';
+
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/50 shadow-lg">
       <SidebarHeader>
@@ -94,10 +96,12 @@ export function AppSidebar() {
       <SidebarFooter className="p-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Configuración">
-              <Settings />
-              <span>Configuración</span>
-            </SidebarMenuButton>
+            <Link href={settingsHref} passHref>
+                <SidebarMenuButton as="a" tooltip="Configuración" isActive={pathname.startsWith(settingsHref)}>
+                    <Settings />
+                    <span>Configuración</span>
+                </SidebarMenuButton>
+            </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleLogout} tooltip="Cerrar Sesión">

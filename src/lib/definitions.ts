@@ -1,5 +1,14 @@
 import { Timestamp } from "firebase/firestore";
 
+export type CompanyProfile = {
+  id: string;
+  name: string;
+  logoUrl: string;
+  address: string;
+  phone: string;
+  country: string;
+};
+
 export type Publisher = {
   id: string;
   name: string;

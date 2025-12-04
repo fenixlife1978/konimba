@@ -15,6 +15,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export function AppHeader() {
   const { user } = useUser();
@@ -22,6 +23,8 @@ export function AppHeader() {
   const router = useRouter();
 
   const userInitials = user?.displayName?.split(' ').map(n => n[0]).join('') || user?.email?.charAt(0).toUpperCase() || 'U';
+  const isAdmin = user?.email === 'faubriciosanchez1@gmail.com';
+  const settingsHref = isAdmin ? '/admin/settings' : '/settings';
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -60,13 +63,17 @@ export function AppHeader() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <User className="mr-2 h-4 w-4" />
-            <span>Perfil</span>
+          <DropdownMenuItem asChild>
+            <Link href="#">
+                <User className="mr-2 h-4 w-4" />
+                <span>Perfil</span>
+            </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Configuración</span>
+          <DropdownMenuItem asChild>
+            <Link href={settingsHref}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Configuración</span>
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>

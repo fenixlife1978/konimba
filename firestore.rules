@@ -60,6 +60,14 @@ service cloud.firestore {
     }
 
     /**
+     * @description Manages company profile settings. Only admins can read and write.
+     * @path /company_profile/settings
+     */
+    match /company_profile/settings {
+      allow read, write: if isAdmin();
+    }
+
+    /**
      * @description Manages publisher profiles. Admin has full access. Users can manage only their own profile.
      * @path /publishers/{publisherId}
      * @allow Admin can do anything. A user can create their own profile, and read/update/delete it.

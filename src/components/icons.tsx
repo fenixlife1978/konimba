@@ -1,6 +1,40 @@
-import type { SVGProps } from "react";
+'use client';
+import { SVGProps, useEffect, useState } from "react";
+import Image from "next/image";
+import { useDoc, useFirestore } from "@/firebase";
+import type { CompanyProfile } from "@/lib/definitions";
+import { doc } from "firebase/firestore";
 
-export function KonimPayLogo(props: SVGProps<SVGSVGElement>) {
+export function KonimPayLogo(props: SVGProps<SVGSVGElement> & { className?: string }) {
+  const firestore = useFirestore();
+  const settingsRef = doc(firestore, 'company_profile', 'settings');
+  const { data: companyProfile } = useDoc<CompanyProfile>(settingsRef);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    // This check is to prevent hydration errors.
+    // The logo URL is only available on the client after Firebase has loaded.
+    if (companyProfile?.logoUrl) {
+      setLogoUrl(companyProfile.logoUrl);
+    }
+  }, [companyProfile]);
+
+  // If a custom logo URL is available from settings, render it as an Image.
+  if (logoUrl) {
+    return (
+      <div className={props.className} style={{ position: 'relative' }}>
+         <Image
+          src={logoUrl}
+          alt={companyProfile?.name || "Company Logo"}
+          fill
+          style={{ objectFit: 'contain' }}
+          priority
+        />
+      </div>
+    );
+  }
+
+  // Fallback to the default SVG logo if no custom URL is set.
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

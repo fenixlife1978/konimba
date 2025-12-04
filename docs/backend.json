@@ -1,5 +1,20 @@
 {
   "entities": {
+    "CompanyProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Company Profile",
+      "type": "object",
+      "description": "Stores the company's profile information.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the company profile." },
+        "name": { "type": "string", "description": "Name of the company." },
+        "logoUrl": { "type": "string", "description": "URL of the company logo." },
+        "address": { "type": "string", "description": "Physical address of the company." },
+        "phone": { "type": "string", "description": "Contact phone number of the company." },
+        "country": { "type": "string", "description": "Country where the company is based." }
+      },
+      "required": ["id", "name", "logoUrl"]
+    },
     "Publisher": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Publisher",
@@ -240,6 +255,15 @@
   },
   "firestore": {
     "structure": [
+      {
+        "path": "/company_profile/settings",
+        "definition": {
+          "entityName": "CompanyProfile",
+          "schema": { "$ref": "#/backend/entities/CompanyProfile" },
+          "description": "Stores a single document with the company's general settings.",
+          "isSingleDoc": true
+        }
+      },
       {
         "path": "/publishers/{publisherId}",
         "definition": {
