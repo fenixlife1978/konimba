@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, ShieldAlert, Receipt, CheckCircle, AlertCircle, XCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { MoreHorizontal, ShieldAlert, Receipt, CheckCircle, AlertCircle, XCircle, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { z } from 'zod';
@@ -16,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
@@ -26,6 +27,17 @@ import {
   DialogDescription,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -34,12 +46,14 @@ import { Badge } from '@/components/ui/badge';
 import type { Payment } from '@/lib/definitions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useFirestore } from '@/firebase';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { CompanyProfile } from '@/lib/definitions';
+import { useDoc, useMemoFirebase } from '@/firebase';
 
 const markAsPaidSchema = z.object({
   paidAt: z.date({ required_error: 'La fecha de pago es obligatoria.'}),
@@ -51,17 +65,30 @@ const markAsPaidSchema = z.object({
 type MarkAsPaidFormValues = z.infer<typeof markAsPaidSchema>;
 
 
-const MarkAsPaidModal = ({ payment, onConfirm }: { payment: Payment, onConfirm: (values: MarkAsPaidFormValues) => void }) => {
+const MarkAsPaidModal = ({ payment, companyProfile, onConfirm }: { payment: Payment, companyProfile?: CompanyProfile | null, onConfirm: (values: MarkAsPaidFormValues) => void }) => {
     const [open, setOpen] = useState(false);
-    const isLocalPayment = payment.paymentMethod === 'BOLIVARES' || payment.paymentMethod === 'PESOS COLOMBIANOS';
+    const isLocalPayment = payment.paymentMethod === 'Bolivares' || payment.paymentMethod === 'Pesos Colombianos';
+
+    const defaultExchangeRate = payment.paymentMethod === 'Bolivares' 
+        ? companyProfile?.usdToVesRate 
+        : companyProfile?.usdToCopRate;
 
     const form = useForm<MarkAsPaidFormValues>({
         resolver: zodResolver(markAsPaidSchema),
         defaultValues: {
             paidAt: new Date(),
-            exchangeRate: undefined,
+            exchangeRate: defaultExchangeRate,
         }
     });
+     
+    // Watch for changes in companyProfile to update default rate
+    useState(() => {
+        form.reset({
+            paidAt: new Date(),
+            exchangeRate: defaultExchangeRate
+        });
+    }, [defaultExchangeRate, form]);
+
 
     const onSubmit = (data: MarkAsPaidFormValues) => {
         if (isLocalPayment && (!data.exchangeRate || data.exchangeRate <= 0)) {
@@ -144,15 +171,14 @@ const MarkAsPaidModal = ({ payment, onConfirm }: { payment: Payment, onConfirm: 
                                 name="exchangeRate"
                                 render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Tasa de Cambio (1 USD a {payment.paymentMethod === 'BOLIVARES' ? 'VES' : 'COP'})</FormLabel>
+                                    <FormLabel>Tasa de Cambio (1 USD a {payment.paymentMethod === 'Bolivares' ? 'VES' : 'COP'})</FormLabel>
                                     <FormControl>
                                         <Input 
                                             type="number" 
                                             step="any" 
-                                            placeholder="Ej. 36.50" 
-                                            {...field} 
-                                            onChange={event => field.onChange(event.target.valueAsNumber)}
-                                            value={field.value || ''}
+                                            placeholder={`Ej. ${defaultExchangeRate || '36.50'}`}
+                                            {...field}
+                                            onChange={event => field.onChange(event.target.value === '' ? undefined : Number(event.target.value))}
                                         />
                                     </FormControl>
                                     <FormMessage />
@@ -171,6 +197,39 @@ const MarkAsPaidModal = ({ payment, onConfirm }: { payment: Payment, onConfirm: 
         </Dialog>
     );
 }
+
+const DeleteConfirmationDialog = ({ payment, onConfirm }: { payment: Payment; onConfirm: () => void }) => {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <DropdownMenuItem
+          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+          onSelect={(e) => e.preventDefault()}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Eliminar Pago
+        </DropdownMenuItem>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Esta acción no se puede deshacer. Esto eliminará permanentemente el registro del pago para{' '}
+            <span className="font-semibold">{payment.publisherName}</span> por un monto de{' '}
+            <span className="font-semibold">${payment.amount.toFixed(2)}</span>.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} className="bg-destructive hover:bg-destructive/90">
+            Sí, eliminar permanentemente
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 
 export const columns: ColumnDef<Payment>[] = [
   {
@@ -219,12 +278,7 @@ export const columns: ColumnDef<Payment>[] = [
       }
 
       // For PayPal/Binance
-      const amount = parseFloat(row.getValue('amount'));
-       const formatted = new Intl.NumberFormat('es-US', {
-        style: 'currency',
-        currency: 'USD',
-      }).format(amount);
-      return <div className="font-medium">{formatted} ({payment.paymentMethod})</div>;
+       return <div className="font-medium">{new Intl.NumberFormat('es-US', { style: 'currency', currency: 'USD' }).format(payment.amount)} ({payment.paymentMethod})</div>;
     },
   },
    {
@@ -281,6 +335,9 @@ export const columns: ColumnDef<Payment>[] = [
     cell: function Cell({ row }) {
       const payment = row.original;
       const firestore = useFirestore();
+      
+      const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'company_profile', 'settings') : null, [firestore]);
+      const { data: companyProfile } = useDoc<CompanyProfile>(settingsRef);
 
       const handleMarkAsPaid = async (values: MarkAsPaidFormValues) => {
           if (!firestore) return;
@@ -289,14 +346,21 @@ export const columns: ColumnDef<Payment>[] = [
               let updateData: Partial<Payment> = {
                   status: 'Pagado',
                   paidAt: values.paidAt,
+                  exchangeRate: undefined,
+                  finalAmount: undefined,
+                  finalCurrency: undefined,
               };
 
-              const isLocalPayment = payment.paymentMethod === 'BOLIVARES' || payment.paymentMethod === 'PESOS COLOMBIANOS';
+              const isLocalPayment = payment.paymentMethod === 'Bolivares' || payment.paymentMethod === 'Pesos Colombianos';
               if (isLocalPayment && values.exchangeRate && values.exchangeRate > 0) {
                   updateData.exchangeRate = values.exchangeRate;
                   updateData.finalAmount = payment.amount * values.exchangeRate;
-                  updateData.finalCurrency = payment.paymentMethod === 'BOLIVARES' ? 'VES' : 'COP';
+                  updateData.finalCurrency = payment.paymentMethod === 'Bolivares' ? 'VES' : 'COP';
+              } else {
+                  updateData.finalAmount = payment.amount;
+                  updateData.finalCurrency = payment.currency === 'USD' ? undefined : payment.currency;
               }
+
 
               await updateDoc(paymentRef, updateData as { [x: string]: any; });
               toast({ title: '¡Éxito!', description: 'El pago ha sido marcado como "Pagado".' });
@@ -305,6 +369,26 @@ export const columns: ColumnDef<Payment>[] = [
               toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el estado del pago.' });
           }
       };
+
+      const handleDelete = async () => {
+        if (!firestore) return;
+        const paymentRef = doc(firestore, 'payments', payment.id);
+        try {
+          await deleteDoc(paymentRef);
+          toast({
+            title: 'Pago Eliminado',
+            description: `El registro de pago para "${payment.publisherName}" ha sido eliminado.`,
+          });
+        } catch (error) {
+          console.error("Error deleting payment:", error);
+          toast({
+            variant: 'destructive',
+            title: 'Error al Eliminar',
+            description: 'No se pudo eliminar el registro del pago.',
+          });
+        }
+      };
+
 
       return (
         <div className="text-right">
@@ -318,9 +402,11 @@ export const columns: ColumnDef<Payment>[] = [
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               {payment.status === 'Pendiente' && (
-                <MarkAsPaidModal payment={payment} onConfirm={handleMarkAsPaid} />
+                <MarkAsPaidModal payment={payment} companyProfile={companyProfile} onConfirm={handleMarkAsPaid} />
               )}
               <DropdownMenuItem>Ver Detalles del Publisher</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DeleteConfirmationDialog payment={payment} onConfirm={handleDelete} />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
