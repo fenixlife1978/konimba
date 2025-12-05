@@ -22,14 +22,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useFirestore } from '@/firebase';
 import {
-  addDoc,
   collection,
   doc,
+  getDocs,
+  query,
   serverTimestamp,
+  where,
   writeBatch,
 } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
@@ -50,34 +51,48 @@ export const LeadClient: React.FC<LeadClientProps> = ({
   const [open, setOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const firestore = useFirestore();
+  const [isClosingPeriod, setIsClosingPeriod] = useState(false);
+
 
   const handleClosePeriod = async () => {
-    if (!firestore) return;
+    setIsClosingPeriod(true);
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Servicio de base de datos no disponible.' });
+      setIsClosingPeriod(false);
+      return;
+    }
     if (!dateRange || !dateRange.from || !dateRange.to) {
       toast({
         variant: 'destructive',
         title: 'Error',
         description: 'Por favor, selecciona un período válido antes de cerrar.',
       });
+      setIsClosingPeriod(false);
       return;
     }
 
     try {
-      // 1. Filter leads within the selected date range
-      const filteredLeads = data.filter((lead) => {
-        const leadDate =
-          typeof (lead.date as any).toDate === 'function'
-            ? (lead.date as any).toDate()
-            : new Date(lead.date);
-        return leadDate >= dateRange.from! && leadDate <= dateRange.to!;
+      // 1. Fetch all leads within the selected date range directly from Firestore
+      const leadsRef = collection(firestore, 'leads');
+      const leadsQuery = query(
+        leadsRef,
+        where('date', '>=', dateRange.from),
+        where('date', '<=', dateRange.to)
+      );
+
+      const querySnapshot = await getDocs(leadsQuery);
+      const leadsInPeriod: Lead[] = [];
+      querySnapshot.forEach((doc) => {
+        leadsInPeriod.push({ id: doc.id, ...doc.data() } as Lead);
       });
 
-      if (filteredLeads.length === 0) {
+      if (leadsInPeriod.length === 0) {
         toast({
           title: 'No hay leads',
           description:
             'No se encontraron leads en el período seleccionado para generar pagos.',
         });
+        setIsClosingPeriod(false);
         return;
       }
       
@@ -87,7 +102,7 @@ export const LeadClient: React.FC<LeadClientProps> = ({
         { amount: number; publisher: Publisher; leads: Lead[] }
       > = {};
 
-      filteredLeads.forEach((lead) => {
+      leadsInPeriod.forEach((lead) => {
         const offer = offers.find((o) => o.id === lead.offerId);
         if (!offer) return;
 
@@ -124,7 +139,7 @@ export const LeadClient: React.FC<LeadClientProps> = ({
           paymentDate: serverTimestamp(),
           paymentMethod: paymentData.publisher.paymentMethod,
           status: 'Pendiente',
-          notes: `Pago generado por cierre de periodo. Incluye ${paymentData.leads.length} registros de leads.`,
+          notes: `Pago generado por cierre de periodo de ${dateRange.from.toLocaleDateString()} a ${dateRange.to.toLocaleDateString()}. Incluye ${paymentData.leads.length} registros de leads.`,
         });
       }
 
@@ -143,6 +158,8 @@ export const LeadClient: React.FC<LeadClientProps> = ({
         title: 'Error',
         description: 'No se pudo cerrar el periodo y generar los pagos.',
       });
+    } finally {
+        setIsClosingPeriod(false);
     }
   };
 
@@ -167,7 +184,9 @@ export const LeadClient: React.FC<LeadClientProps> = ({
             <PeriodSelector onDateChange={setDateRange} />
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline">Cerrar Periodo y Generar Pagos</Button>
+                <Button variant="outline" disabled={isClosingPeriod}>
+                  {isClosingPeriod ? 'Generando Pagos...' : 'Cerrar Periodo y Generar Pagos'}
+                </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -183,8 +202,8 @@ export const LeadClient: React.FC<LeadClientProps> = ({
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleClosePeriod}>
-                    Confirmar y Generar
+                  <AlertDialogAction onClick={handleClosePeriod} disabled={isClosingPeriod}>
+                    {isClosingPeriod ? 'Procesando...' : 'Confirmar y Generar'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
