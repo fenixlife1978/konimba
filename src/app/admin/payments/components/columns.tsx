@@ -273,7 +273,7 @@ export const columns = ({ liveRates = {} }: ColumnsProps): ColumnDef<Payment>[] 
   },
   {
     accessorKey: 'finalAmount',
-    header: 'Total Pagado',
+    header: 'Total a Pagar',
     cell: ({ row }) => {
       const payment = row.original;
       
