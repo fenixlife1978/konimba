@@ -15,6 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter as UiTableFooter,
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useMemo } from 'react';
@@ -51,7 +52,6 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
   const { reportData, totalLeads, totalAmount } = useMemo(() => {
     const leadsByOfferAndDate: LeadsByOfferAndDate = {};
     let totalLeads = 0;
-    let totalAmount = 0;
 
     const offerMap = new Map(offers.map(o => [o.id, o]));
     const activeOffersInLeads = new Set<string>();
@@ -70,19 +70,26 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
             leadsByOfferAndDate[lead.offerId][dateStr] = lead.count;
             
             totalLeads += lead.count;
-            totalAmount += lead.count * offer.payout;
         }
     });
 
     const reportData = Array.from(activeOffersInLeads).map(offerId => {
         const offer = offerMap.get(offerId);
+        const dailyLeads = leadsByOfferAndDate[offerId] || {};
+        const totalOfferLeads = Object.values(dailyLeads).reduce((sum, count) => sum + count, 0);
+        const subtotal = totalOfferLeads * (offer?.payout || 0);
+
         return {
             offerId: offerId,
             offerName: offer?.name || `Oferta ${offerId}`,
             offerPayout: offer?.payout || 0,
-            dailyLeads: leadsByOfferAndDate[offerId] || {}
+            dailyLeads: dailyLeads,
+            totalOfferLeads: totalOfferLeads,
+            subtotal: subtotal
         };
     }).sort((a,b) => a.offerName.localeCompare(b.offerName));
+
+    const totalAmount = reportData.reduce((sum, item) => sum + item.subtotal, 0);
 
     return { reportData, totalLeads, totalAmount };
 
@@ -115,12 +122,12 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
                         {format(day, 'dd')}
                     </TableHead>
                 ))}
-                <TableHead className="text-right font-semibold pr-4">Total Leads</TableHead>
+                <TableHead className="text-right font-semibold">Total Leads</TableHead>
+                <TableHead className="text-right font-semibold pr-4">Sub Total</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {reportData.map(({ offerId, offerName, offerPayout, dailyLeads }) => {
-                    const totalOfferLeads = Object.values(dailyLeads).reduce((sum, count) => sum + count, 0);
+                {reportData.map(({ offerId, offerName, offerPayout, dailyLeads, totalOfferLeads, subtotal }) => {
                     return (
                         <TableRow key={offerId}>
                             <TableCell className="sticky left-0 bg-card z-10 font-medium truncate max-w-[200px]">
@@ -138,30 +145,27 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
                                     </TableCell>
                                 );
                             })}
-                            <TableCell className="text-right font-bold pr-4">{totalOfferLeads}</TableCell>
+                            <TableCell className="text-right font-bold">{totalOfferLeads}</TableCell>
+                             <TableCell className="text-right font-mono text-sm font-semibold pr-4">
+                              {subtotal.toLocaleString('es-US', { style: 'currency', currency: 'USD' })}
+                            </TableCell>
                         </TableRow>
                     );
                 })}
             </TableBody>
+             <UiTableFooter>
+                <TableRow>
+                    <TableCell colSpan={daysInPeriod.length + 2} className="text-right font-bold text-lg">Total a Pagar</TableCell>
+                    <TableCell className="text-right font-bold text-lg">{totalLeads}</TableCell>
+                    <TableCell className="text-right font-bold text-lg pr-4">
+                        {totalAmount.toLocaleString('es-US', { style: 'currency', currency: 'USD' })}
+                    </TableCell>
+                </TableRow>
+            </UiTableFooter>
             </Table>
             <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </CardContent>
-      <CardFooter className="bg-muted/30 p-4 flex justify-end gap-8 font-semibold">
-        <div>
-          <span>Leads Totales del Periodo: </span>
-          <span className="text-primary">{totalLeads}</span>
-        </div>
-        <div>
-          <span>Monto Total a Pagar: </span>
-          <span className="text-primary text-lg">
-            {totalAmount.toLocaleString('es-US', {
-              style: 'currency',
-              currency: 'USD',
-            })}
-          </span>
-        </div>
-      </CardFooter>
     </Card>
   );
 };
