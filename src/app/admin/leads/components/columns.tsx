@@ -36,6 +36,10 @@ interface ColumnsProps {
 }
 
 const DeleteConfirmationDialog = ({ lead, onConfirm }: { lead: Lead, onConfirm: () => void }) => {
+  const date = lead.date as any;
+  const jsDate = date?.toDate ? date.toDate() : new Date(date);
+  const formattedDate = format(jsDate, 'dd/MM/yyyy');
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -48,7 +52,7 @@ const DeleteConfirmationDialog = ({ lead, onConfirm }: { lead: Lead, onConfirm: 
           <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
           <AlertDialogDescription>
             Esta acción no se puede deshacer. Esto eliminará permanentemente el registro de leads del editor 
-            <span className="font-semibold"> {lead.publisherName}</span> para la oferta <span className="font-semibold">{lead.offerName}</span> del día <span className="font-semibold">{format(new Date(lead.date as string), 'dd/MM/yyyy')}</span>.
+            <span className="font-semibold"> {lead.publisherName}</span> para la oferta <span className="font-semibold">{lead.offerName}</span> del día <span className="font-semibold">{formattedDate}</span>.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
