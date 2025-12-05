@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -58,7 +59,7 @@ const ManageRatesModal = ({ onRatesUpdate }: { onRatesUpdate: (rates: RatesFormV
 
     useEffect(() => {
         if (companyProfile) {
-            const newValues = {
+            const newValues: RatesFormValues = {
                 usdToVesRate: companyProfile.usdToVesRate,
                 usdToCopRate: companyProfile.usdToCopRate,
             };
