@@ -130,24 +130,30 @@ export const columns: ColumnDef<Payment>[] = [
   },
   {
     accessorKey: 'amount',
-    header: 'Monto a Pagar',
+    header: 'Monto Original (USD)',
+    cell: ({ row }) => {
+      const amount = parseFloat(row.getValue('amount'));
+      const formatted = new Intl.NumberFormat('es-US', {
+        style: 'currency',
+        currency: 'USD',
+      }).format(amount);
+
+      return <div className="font-medium">{formatted}</div>;
+    },
+  },
+  {
+    accessorKey: 'finalAmount',
+    header: 'Total Convertido',
     cell: ({ row }) => {
       const payment = row.original;
-      const originalAmount = new Intl.NumberFormat('es-US', { style: 'currency', currency: 'USD' }).format(payment.amount);
-      
       if (payment.status === 'Pagado' && payment.finalAmount && payment.finalCurrency) {
         const finalAmountFormatted = new Intl.NumberFormat(payment.finalCurrency === 'VES' ? 'es-VE' : 'es-CO', {
           style: 'currency',
           currency: payment.finalCurrency,
         }).format(payment.finalAmount);
-        return (
-          <div className="flex flex-col">
-            <span className="font-medium">{finalAmountFormatted}</span>
-            <span className="text-xs text-muted-foreground">({originalAmount})</span>
-          </div>
-        );
+        return <div className="font-medium">{finalAmountFormatted}</div>;
       }
-      return <div className="font-medium">{originalAmount}</div>;
+      return <span className="text-muted-foreground">N/A</span>;
     },
   },
   {
