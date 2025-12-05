@@ -355,6 +355,16 @@ export const columns = ({ liveRates = {} }: ColumnsProps): ColumnDef<Payment>[] 
     },
   },
   {
+    accessorKey: 'createdAt',
+    header: 'Fecha de Creación',
+    cell: ({ row }) => {
+      const date = row.original.createdAt as any;
+      if (!date) return <span className="text-muted-foreground">N/A</span>;
+      const jsDate = date?.toDate ? date.toDate() : new Date(date);
+      return format(jsDate, 'dd/MM/yyyy');
+    },
+  },
+  {
     accessorKey: 'paidAt',
     header: 'Fecha de Pago',
     cell: ({ row }) => {
