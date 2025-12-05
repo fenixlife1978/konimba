@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { OverviewChart } from '@/components/dashboard/overview-chart';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -22,23 +22,24 @@ export default function DashboardPage() {
   const publishersRef = useMemoFirebase(() => firestore && user ? collection(firestore, 'publishers') : null, [firestore, user]);
   const { data: publishers } = useCollection(publishersRef);
 
-  const paymentsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'publishers', user.uid, 'payments')) : null, [firestore, user]);
+  const paymentsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'publishers', user.uid, 'payments'));
+  }, [firestore, user]);
   const { data: payments } = useCollection(paymentsQuery);
 
   const totalRevenue = payments?.reduce((acc, p) => acc + p.amount, 0) || 0;
   const totalPublishers = publishers?.length || 0;
   const totalPayments = payments?.length || 0;
   
-  // TODO: Add status to payment to calculate pending payments
-  const pendingPayments = 0;
-
+  const pendingPayments = payments?.filter(p => p.status === 'Pendiente').length || 0;
 
   return (
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
+            <CardTitle className="text-sm font-medium">Mis Ingresos</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -46,7 +47,7 @@ export default function DashboardPage() {
               ${totalRevenue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground">
-              De todos los editores
+              Total generado por ti
             </p>
           </CardContent>
         </Card>
@@ -64,13 +65,13 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pagos Totales</CardTitle>
+            <CardTitle className="text-sm font-medium">Mis Pagos</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">+{totalPayments}</div>
             <p className="text-xs text-muted-foreground">
-              Procesados en el sistema
+              Total de pagos recibidos
             </p>
           </CardContent>
         </Card>
