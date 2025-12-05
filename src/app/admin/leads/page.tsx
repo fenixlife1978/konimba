@@ -1,19 +1,20 @@
 'use client';
 import type { Lead, GlobalOffer, Publisher } from '@/lib/definitions';
 import { LeadClient } from './components/client';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
 export default function AdminLeadsPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
 
-  const leadsRef = useMemoFirebase(() => firestore ? collection(firestore, 'leads') : null, [firestore]);
+  const leadsRef = useMemoFirebase(() => firestore && user ? collection(firestore, 'leads') : null, [firestore, user]);
   const { data: leads, isLoading: leadsLoading } = useCollection<Lead>(leadsRef);
   
-  const offersRef = useMemoFirebase(() => firestore ? collection(firestore, 'global-offers') : null, [firestore]);
+  const offersRef = useMemoFirebase(() => firestore && user ? collection(firestore, 'global-offers') : null, [firestore, user]);
   const { data: offers, isLoading: offersLoading } = useCollection<GlobalOffer>(offersRef);
 
-  const publishersRef = useMemoFirebase(() => firestore ? collection(firestore, 'publishers') : null, [firestore]);
+  const publishersRef = useMemoFirebase(() => firestore && user ? collection(firestore, 'publishers') : null, [firestore, user]);
   const { data: publishers, isLoading: publishersLoading } = useCollection<Publisher>(publishersRef);
 
   const isLoading = leadsLoading || offersLoading || publishersLoading;

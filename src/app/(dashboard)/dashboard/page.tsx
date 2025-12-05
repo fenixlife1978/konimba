@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const publishersRef = useMemoFirebase(() => firestore ? collection(firestore, 'publishers') : null, [firestore]);
+  const publishersRef = useMemoFirebase(() => firestore && user ? collection(firestore, 'publishers') : null, [firestore, user]);
   const { data: publishers } = useCollection(publishersRef);
 
   const paymentsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'publishers', user.uid, 'payments')) : null, [firestore, user]);

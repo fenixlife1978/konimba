@@ -1,18 +1,19 @@
 'use client';
 import type { Payment, Publisher } from '@/lib/definitions';
 import { PaymentClient } from './components/client';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { useMemo } from 'react';
 
 export default function AdminPaymentsPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
 
   // Query all payments from the top-level 'payments' collection
-  const paymentsRef = useMemoFirebase(() => firestore ? collection(firestore, 'payments') : null, [firestore]);
+  const paymentsRef = useMemoFirebase(() => firestore && user ? collection(firestore, 'payments') : null, [firestore, user]);
   const { data: payments, isLoading: paymentsLoading } = useCollection<Payment>(paymentsRef);
   
-  const publishersRef = useMemoFirebase(() => firestore ? collection(firestore, 'publishers') : null, [firestore]);
+  const publishersRef = useMemoFirebase(() => firestore && user ? collection(firestore, 'publishers') : null, [firestore, user]);
   const { data: publishers, isLoading: publishersLoading } = useCollection<Publisher>(publishersRef);
 
   const enrichedPayments = useMemo(() => {

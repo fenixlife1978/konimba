@@ -46,7 +46,7 @@ export default function ReportsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight font-headline">Informe de Pagos</h1>
       </div>
-      <DataTable searchKey="publisherName" columns={columns} data={enrichedPayments || []} />
+      <DataTable searchKey="publisherName" columns={columns({})} data={enrichedPayments || []} />
     </div>
   );
 }

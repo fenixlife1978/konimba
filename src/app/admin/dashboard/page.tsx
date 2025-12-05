@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { OverviewChart } from '@/components/dashboard/overview-chart';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, getDocs } from 'firebase/firestore';
 import React from 'react';
 import type { GlobalOffer, Lead, Publisher, Payment } from '@/lib/definitions';
@@ -20,6 +20,7 @@ import { Timestamp } from 'firebase/firestore';
 
 export default function AdminDashboardPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
 
   const [stats, setStats] = React.useState({
     lastTotalPayment: 0,
@@ -28,15 +29,15 @@ export default function AdminDashboardPage() {
     pendingPayments: 0,
   });
   
-  const publishersRef = useMemoFirebase(() => firestore ? collection(firestore, 'publishers') : null, [firestore]);
+  const publishersRef = useMemoFirebase(() => firestore && user ? collection(firestore, 'publishers') : null, [firestore, user]);
   const { data: publishers, isLoading: publishersLoading } = useCollection<Publisher>(publishersRef);
 
-  const allPaymentsRef = useMemoFirebase(() => firestore ? collection(firestore, 'payments') : null, [firestore]);
+  const allPaymentsRef = useMemoFirebase(() => firestore && user ? collection(firestore, 'payments') : null, [firestore, user]);
   const { data: allPayments, isLoading: paymentsLoading } = useCollection<Payment>(allPaymentsRef);
 
 
   React.useEffect(() => {
-    if (firestore && publishers) {
+    if (firestore && publishers && user) {
       const fetchStats = async () => {
         let totalPayments = 0;
         let pendingPayments = 0;
@@ -78,7 +79,7 @@ export default function AdminDashboardPage() {
 
       fetchStats();
     }
-  }, [firestore, publishers, allPayments]);
+  }, [firestore, publishers, allPayments, user]);
 
   const isLoading = publishersLoading || paymentsLoading;
 

@@ -1,12 +1,13 @@
 'use client';
 import type { Publisher } from '@/lib/definitions';
 import { PublisherClient } from './components/client';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
 export default function AdminPublishersPage() {
   const firestore = useFirestore();
-  const publishersRef = useMemoFirebase(() => firestore ? collection(firestore, 'publishers') : null, [firestore]);
+  const { user } = useUser();
+  const publishersRef = useMemoFirebase(() => firestore && user ? collection(firestore, 'publishers') : null, [firestore, user]);
   const { data: publishers, isLoading } = useCollection<Publisher>(publishersRef);
 
   if (isLoading) {
