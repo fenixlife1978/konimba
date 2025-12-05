@@ -13,20 +13,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useFirestore } from '@/firebase';
 import {
   collection,
   doc,
   addDoc,
   updateDoc,
-  serverTimestamp,
 } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import type { Lead, Publisher, GlobalOffer } from '@/lib/definitions';
@@ -35,8 +27,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { es } from 'date-fns/locale';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 const leadSchema = z.object({
   publisherId: z.string().min(1, 'El editor es requerido.'),
@@ -92,16 +85,25 @@ export function LeadForm({
     setIsLoading(true);
     try {
       if (!firestore) throw new Error("Firestore not available");
-      const leadsCollection = collection(firestore, 'leads');
+      
+      const publisherName = publishers.find(p => p.id === data.publisherId)?.name || 'Desconocido';
+      const offerName = offers.find(o => o.id === data.offerId)?.name || 'Desconocido';
 
+      const leadData = {
+        ...data,
+        publisherName,
+        offerName,
+      };
+      
       if (initialData) {
         // Update existing lead record
         const leadRef = doc(firestore, 'leads', initialData.id);
-        await updateDoc(leadRef, { ...data });
+        await updateDoc(leadRef, leadData);
         toast({ title: '¡Éxito!', description: 'Registro de leads actualizado correctamente.' });
       } else {
         // Create new lead record
-        const docRef = await addDoc(leadsCollection, data);
+        const leadsCollection = collection(firestore, 'leads');
+        const docRef = await addDoc(leadsCollection, leadData);
         await updateDoc(docRef, { id: docRef.id }); // Store the ID within the document
         toast({ title: '¡Éxito!', description: 'Leads cargados correctamente.' });
       }
@@ -125,22 +127,58 @@ export function LeadForm({
           control={form.control}
           name="publisherId"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="flex flex-col">
               <FormLabel>Editor</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un editor" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {publishers.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? publishers.find(
+                              (p) => p.id === field.value
+                            )?.name
+                          : "Selecciona un editor"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0">
+                    <Command>
+                      <CommandInput placeholder="Buscar editor..." />
+                      <CommandList>
+                        <CommandEmpty>No se encontró el editor.</CommandEmpty>
+                        <CommandGroup>
+                          {publishers.map((p) => (
+                            <CommandItem
+                              value={p.name}
+                              key={p.id}
+                              onSelect={() => {
+                                form.setValue("publisherId", p.id)
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  p.id === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {p.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               <FormMessage />
             </FormItem>
           )}
@@ -149,22 +187,58 @@ export function LeadForm({
           control={form.control}
           name="offerId"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="flex flex-col">
               <FormLabel>Oferta del Catálogo</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona una oferta" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {offers.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? offers.find(
+                              (o) => o.id === field.value
+                            )?.name
+                          : "Selecciona una oferta"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0">
+                    <Command>
+                      <CommandInput placeholder="Buscar oferta..." />
+                       <CommandList>
+                        <CommandEmpty>No se encontró la oferta.</CommandEmpty>
+                        <CommandGroup>
+                          {offers.map((o) => (
+                            <CommandItem
+                              value={o.name}
+                              key={o.id}
+                              onSelect={() => {
+                                form.setValue("offerId", o.id)
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  o.id === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {o.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               <FormMessage />
             </FormItem>
           )}
