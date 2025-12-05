@@ -45,17 +45,19 @@ export const LeadClient: React.FC<LeadClientProps> = ({
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const firestore = useFirestore();
   const [isClosingPeriod, setIsClosingPeriod] = useState(false);
-  const [activeDate, setActiveDate] = useState<Date>();
+  const [activeDate, setActiveDate] = useState<Date | undefined>();
   const [isSaving, setIsSaving] = useState(false);
   
   const leadGridRef = useRef<LeadGridHandle>(null);
 
   useEffect(() => {
     // Set initial date on client-side only to prevent hydration mismatch
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    setActiveDate(today);
-  }, []);
+    if (!activeDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        setActiveDate(today);
+    }
+  }, [activeDate]);
 
   const leadsForActiveDate = useMemo(() => {
     if (!activeDate || !data) return [];
@@ -269,6 +271,7 @@ export const LeadClient: React.FC<LeadClientProps> = ({
             <PeriodSelector
               onDateChange={setDateRange}
               onSingleDateChange={setActiveDate}
+              initialDate={activeDate}
             />
         </div>
       </div>

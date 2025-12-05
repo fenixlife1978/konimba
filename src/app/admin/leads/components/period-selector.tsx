@@ -17,25 +17,23 @@ import type { DateRange } from 'react-day-picker';
 interface PeriodSelectorProps {
   onDateChange: (range: DateRange | undefined) => void;
   onSingleDateChange?: (date: Date) => void;
-  initialRange?: DateRange;
+  initialDate?: Date;
 }
 
 export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   onDateChange,
   onSingleDateChange,
+  initialDate,
 }) => {
   const [range, setRange] = useState<DateRange | undefined>();
-  const [singleDate, setSingleDate] = useState<Date | undefined>();
+  const [singleDate, setSingleDate] = useState<Date | undefined>(initialDate);
   const [mode, setMode] = useState<'single' | 'range'>(onSingleDateChange ? 'single' : 'range');
 
-  // Set initial date on client-side only to prevent hydration mismatch
   useEffect(() => {
-    if (onSingleDateChange) {
-        const today = new Date();
-        setSingleDate(today);
-        onSingleDateChange(today);
+    if (initialDate && !singleDate) {
+        setSingleDate(initialDate);
     }
-  }, [onSingleDateChange]);
+  }, [initialDate, singleDate]);
 
   useEffect(() => {
     if (mode === 'range') {
