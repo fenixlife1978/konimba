@@ -1,18 +1,7 @@
 'use client';
-import { Plus } from 'lucide-react';
+import { Plus, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Lead, Publisher, GlobalOffer } from '@/lib/definitions';
-import { DataTable } from './data-table';
-import { columns } from './columns';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { LeadForm } from './lead-form';
-import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +26,8 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { PeriodSelector } from './period-selector';
 import type { DateRange } from 'react-day-picker';
+import { LeadGrid } from './lead-grid';
+import { useState, useMemo } from 'react';
 
 interface LeadClientProps {
   data: Lead[];
@@ -49,10 +40,22 @@ export const LeadClient: React.FC<LeadClientProps> = ({
   publishers,
   offers,
 }) => {
-  const [open, setOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const firestore = useFirestore();
   const [isClosingPeriod, setIsClosingPeriod] = useState(false);
+  
+  const [activeDate, setActiveDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
+  const [modifiedLeads, setModifiedLeads] = useState<Record<string, number>>({});
+  const [isSaving, setIsSaving] = useState(false);
+
+
+  // Filter offers to only include active ones for the grid columns
+  const activeOffers = useMemo(() => offers.filter(o => o.status === 'Activa'), [offers]);
 
 
   const handleClosePeriod = async () => {
@@ -164,73 +167,108 @@ export const LeadClient: React.FC<LeadClientProps> = ({
     }
   };
 
-  const filteredData = dateRange?.from ? data.filter(lead => {
-    const leadDate = typeof (lead.date as any).toDate === 'function' ? (lead.date as any).toDate() : new Date(lead.date as string);
-    const from = dateRange.from;
-    const to = dateRange.to || from; // If no 'to' date, filter for a single day
+  const handleSave = async () => {
+    if (Object.keys(modifiedLeads).length === 0) {
+      toast({ title: 'Sin cambios', description: 'No hay modificaciones para guardar.' });
+      return;
+    }
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Servicio de base de datos no disponible.' });
+      return;
+    }
 
-    // Normalize dates to ignore time
-    const leadDay = new Date(leadDate.getFullYear(), leadDate.getMonth(), leadDate.getDate());
-    const fromDay = new Date(from.getFullYear(), from.getMonth(), from.getDate());
-    const toDay = new Date(to.getFullYear(), to.getMonth(), to.getDate());
-    
-    return leadDay >= fromDay && leadDay <= toDay;
-  }) : data;
+    setIsSaving(true);
+    try {
+      const batch = writeBatch(firestore);
+      const leadsRef = collection(firestore, 'leads');
+
+      for (const key in modifiedLeads) {
+        const [publisherId, offerId, leadId] = key.split('__');
+        const count = modifiedLeads[key];
+        const publisher = publishers.find(p => p.id === publisherId);
+        const offer = offers.find(o => o.id === offerId);
+
+        if (leadId !== 'new') { // Existing lead
+          const docRef = doc(leadsRef, leadId);
+          batch.update(docRef, { count });
+        } else { // New lead
+          const newDocRef = doc(leadsRef);
+          batch.set(newDocRef, {
+            id: newDocRef.id,
+            publisherId,
+            offerId,
+            date: activeDate,
+            count,
+            publisherName: publisher?.name || 'N/A',
+            offerName: offer?.name || 'N/A'
+          });
+        }
+      }
+
+      await batch.commit();
+      toast({ title: '¡Éxito!', description: 'Los cambios en los leads han sido guardados.'});
+      setModifiedLeads({});
+    } catch (error) {
+      console.error('Error saving leads:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron guardar los cambios.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
 
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <PeriodSelector onDateChange={setDateRange} />
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" disabled={isClosingPeriod}>
-                  {isClosingPeriod ? 'Generando Pagos...' : 'Cerrar Periodo y Generar Pagos'}
+      <div className="flex flex-col gap-4 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+                <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="outline" disabled={isClosingPeriod}>
+                    {isClosingPeriod ? 'Generando Pagos...' : 'Cerrar Periodo y Generar Pagos'}
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>
+                        ¿Confirmar Cierre de Periodo?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta acción calculará y generará los registros de pago para
+                        todos los publishers basados en los leads cargados en el
+                        periodo seleccionado. Los pagos se crearán en estado
+                        "Pendiente". ¿Estás seguro?
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClosePeriod} disabled={isClosingPeriod}>
+                        {isClosingPeriod ? 'Procesando...' : 'Confirmar y Generar'}
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+                </AlertDialog>
+                 <Button onClick={handleSave} disabled={isSaving}>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isSaving ? 'Guardando...' : 'Guardar Cambios'}
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    ¿Confirmar Cierre de Periodo?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta acción calculará y generará los registros de pago para
-                    todos los publishers basados en los leads cargados en el
-                    periodo seleccionado. Los pagos se crearán en estado
-                    "Pendiente". ¿Estás seguro?
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleClosePeriod} disabled={isClosingPeriod}>
-                    {isClosingPeriod ? 'Procesando...' : 'Confirmar y Generar'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Cargar Leads
-            </Button>
-          </DialogTrigger>
+            </div>
+            <PeriodSelector onDateChange={setDateRange} onSingleDateChange={setActiveDate} />
         </div>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Cargar Nuevos Leads</DialogTitle>
-          </DialogHeader>
-          <LeadForm
-            publishers={publishers}
-            offers={offers}
-            onSuccess={() => setOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-      <DataTable
-        searchKey="publisherName"
-        columns={columns({ publishers, offers })}
-        data={filteredData}
+      </div>
+      
+      <LeadGrid
+        key={activeDate.toISOString()} // Force re-render when date changes
+        publishers={publishers}
+        offers={activeOffers}
+        leads={data}
+        date={activeDate}
+        onLeadChange={(publisherId, offerId, count, leadId) => {
+          setModifiedLeads(prev => ({
+            ...prev,
+            [`${publisherId}__${offerId}__${leadId || 'new'}`]: count,
+          }));
+        }}
       />
     </>
   );

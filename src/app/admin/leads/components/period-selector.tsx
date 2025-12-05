@@ -1,173 +1,117 @@
-// This is a new file
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { getDaysInMonth, getYear, getMonth } from 'date-fns';
-import { Label } from '@/components/ui/label';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { es } from 'date-fns/locale';
+import { format, addDays } from 'date-fns';
+import { cn } from '@/lib/utils';
 import type { DateRange } from 'react-day-picker';
 
 interface PeriodSelectorProps {
   onDateChange: (range: DateRange | undefined) => void;
+  onSingleDateChange: (date: Date) => void;
 }
-
-const years = Array.from({ length: 10 }, (_, i) => getYear(new Date()) - i);
-const months = Array.from({ length: 12 }, (_, i) => ({
-  value: i,
-  label: new Date(0, i).toLocaleString('es-ES', { month: 'long' }),
-}));
 
 export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   onDateChange,
+  onSingleDateChange,
 }) => {
-  const [startDate, setStartDate] = useState({
-    year: getYear(new Date()),
-    month: getMonth(new Date()),
-    day: 1,
+  const [range, setRange] = useState<DateRange | undefined>({
+    from: new Date(),
+    to: addDays(new Date(), 7),
   });
-  const [endDate, setEndDate] = useState({
-    year: getYear(new Date()),
-    month: getMonth(new Date()),
-    day: getDaysInMonth(new Date()),
-  });
+  const [singleDate, setSingleDate] = useState<Date | undefined>(new Date());
+  const [mode, setMode] = useState<'single' | 'range'>('single');
 
   useEffect(() => {
-    const from = new Date(startDate.year, startDate.month, startDate.day);
-    const to = new Date(endDate.year, endDate.month, endDate.day);
-    if (from <= to) {
-      onDateChange({ from, to });
+    if (mode === 'range') {
+      onDateChange(range);
     } else {
-      // If start date is after end date, maybe show a warning or reset
-      onDateChange(undefined);
+        if(singleDate) {
+            const startOfDay = new Date(singleDate);
+            startOfDay.setHours(0,0,0,0);
+            onSingleDateChange(startOfDay);
+        }
     }
-  }, [startDate, endDate, onDateChange]);
-
-  const getDaysForMonth = (year: number, month: number) => {
-    return Array.from(
-      { length: getDaysInMonth(new Date(year, month)) },
-      (_, i) => i + 1
-    );
-  };
+  }, [range, singleDate, mode, onDateChange, onSingleDateChange]);
 
   return (
-    <div className="flex items-end gap-4 p-4 border rounded-lg bg-card">
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-xs text-muted-foreground">Inicio</Label>
-        <div className="flex items-center gap-2">
-          <Select
-            value={startDate.day.toString()}
-            onValueChange={(v) =>
-              setStartDate((s) => ({ ...s, day: parseInt(v) }))
-            }
+    <div className="flex items-end gap-2 p-2 border rounded-lg bg-card">
+      <div className="grid gap-1">
+        <div className="flex items-center gap-1">
+          <Button
+            variant={mode === 'single' ? 'secondary' : 'ghost'}
+            onClick={() => setMode('single')}
+            className="h-8 px-3"
           >
-            <SelectTrigger className="w-20">
-              <SelectValue placeholder="Día" />
-            </SelectTrigger>
-            <SelectContent>
-              {getDaysForMonth(startDate.year, startDate.month).map((day) => (
-                <SelectItem key={day} value={day.toString()}>
-                  {day}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={startDate.month.toString()}
-            onValueChange={(v) =>
-              setStartDate((s) => ({ ...s, month: parseInt(v) }))
-            }
+            Día
+          </Button>
+          <Button
+            variant={mode === 'range' ? 'secondary' : 'ghost'}
+            onClick={() => setMode('range')}
+            className="h-8 px-3"
           >
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Mes" />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map((month) => (
-                <SelectItem key={month.value} value={month.value.toString()}>
-                  {month.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={startDate.year.toString()}
-            onValueChange={(v) =>
-              setStartDate((s) => ({ ...s, year: parseInt(v) }))
-            }
-          >
-            <SelectTrigger className="w-[90px]">
-              <SelectValue placeholder="Año" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            Rango (para Cierre)
+          </Button>
         </div>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-xs text-muted-foreground">Fin</Label>
-        <div className="flex items-center gap-2">
-          <Select
-            value={endDate.day.toString()}
-            onValueChange={(v) =>
-              setEndDate((s) => ({ ...s, day: parseInt(v) }))
-            }
-          >
-            <SelectTrigger className="w-20">
-              <SelectValue placeholder="Día" />
-            </SelectTrigger>
-            <SelectContent>
-              {getDaysForMonth(endDate.year, endDate.month).map((day) => (
-                <SelectItem key={day} value={day.toString()}>
-                  {day}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={endDate.month.toString()}
-            onValueChange={(v) =>
-              setEndDate((s) => ({ ...s, month: parseInt(v) }))
-            }
-          >
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Mes" />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map((month) => (
-                <SelectItem key={month.value} value={month.value.toString()}>
-                  {month.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={endDate.year.toString()}
-            onValueChange={(v) =>
-              setEndDate((s) => ({ ...s, year: parseInt(v) }))
-            }
-          >
-            <SelectTrigger className="w-[90px]">
-              <SelectValue placeholder="Año" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              id="date"
+              variant={'outline'}
+              className={cn(
+                'w-[260px] justify-start text-left font-normal',
+                !range && !singleDate && 'text-muted-foreground'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {mode === 'single' && singleDate ? (
+                format(singleDate, 'PPP', { locale: es })
+              ) : mode === 'range' && range?.from ? (
+                range.to ? (
+                  <>
+                    {format(range.from, 'LLL dd, y', { locale: es })} -{' '}
+                    {format(range.to, 'LLL dd, y', { locale: es })}
+                  </>
+                ) : (
+                  format(range.from, 'LLL dd, y', { locale: es })
+                )
+              ) : (
+                <span>Elige una fecha</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar
+              initialFocus
+              mode={mode}
+              defaultMonth={
+                mode === 'single' ? singleDate : range?.from
+              }
+              selected={mode === 'single' ? singleDate : range}
+              onSelect={
+                mode === 'single'
+                  ? (day) => {
+                      if (day instanceof Date) {
+                        const startOfDay = new Date(day);
+                        startOfDay.setHours(0,0,0,0);
+                        setSingleDate(startOfDay);
+                      }
+                    }
+                  : setRange
+              }
+              numberOfMonths={mode === 'range' ? 2 : 1}
+              locale={es}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );
