@@ -1,23 +1,29 @@
 'use client';
-import { useUser } from '@/firebase';
 import { redirect } from 'next/navigation';
 import { useEffect } from 'react';
+import { useUser } from '@/firebase';
 
-export default function DashboardRoot() {
+export default function DashboardRootPage() {
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (!isUserLoading) {
-      if (!user) {
-        redirect('/login');
-      } else if (user?.email === 'faubriciosanchez1@gmail.com') {
+    if (isUserLoading) {
+      // Wait until user status is resolved
+      return;
+    }
+
+    if (user) {
+      if (user.email === 'faubriciosanchez1@gmail.com') {
         redirect('/admin/dashboard');
       } else {
         redirect('/dashboard');
       }
+    } else {
+      // If no user, redirect to login
+      redirect('/login');
     }
   }, [user, isUserLoading]);
 
-  // You can show a loading spinner here while checking the user role
+  // Render a loading state while checking auth
   return <div>Cargando...</div>;
 }

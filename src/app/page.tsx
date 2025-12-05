@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { KonimPayLogo } from '@/components/icons';
 import { FirebaseClientProvider, useUser } from '@/firebase';
-import { redirect } from 'next/navigation';
 import { useEffect } from 'react';
+import { redirect } from 'next/navigation';
 
 function WelcomeContent() {
   const { user, isUserLoading } = useUser();
@@ -18,6 +18,7 @@ function WelcomeContent() {
       }
     }
   }, [user, isUserLoading]);
+
 
   if (isUserLoading || user) {
     return (
