@@ -49,11 +49,13 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     }
   }, [range, singleDate, mode, onDateChange, onSingleDateChange]);
 
+  const showSingleDateSelector = !!onSingleDateChange;
+
   return (
     <div className="flex items-end gap-2 p-2 border rounded-lg bg-card">
       <div className="grid gap-1">
         <div className="flex items-center gap-1">
-            {onSingleDateChange && (
+            {showSingleDateSelector && (
                 <Button
                     variant={mode === 'single' ? 'secondary' : 'ghost'}
                     onClick={() => setMode('single')}
