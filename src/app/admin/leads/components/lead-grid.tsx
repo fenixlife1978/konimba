@@ -32,25 +32,14 @@ export const LeadGrid = forwardRef<LeadGridHandle, LeadGridProps>(({
   date,
 }, ref) => {
   
-  // Memoize leads for the active date for performance
-  const leadsForDate = useMemo(() => {
-    const targetDateString = date.toISOString().split('T')[0];
-    return leads?.filter(lead => {
-        // Handle both Firestore Timestamp and JS Date objects
-        const leadDate = lead.date instanceof Date ? lead.date : (lead.date as any)?.toDate?.();
-        if (!leadDate) return false;
-        return leadDate?.toISOString().split('T')[0] === targetDateString;
-    }) || [];
-  }, [leads, date]);
-
   // Create a map for quick lookup: 'publisherId_offerId' -> {count, id}
   const leadsMap = useMemo(() => {
     const map = new Map<string, { count: number; id: string }>();
-    leadsForDate.forEach(lead => {
+    leads.forEach(lead => {
       map.set(`${lead.publisherId}_${lead.offerId}`, { count: lead.count, id: lead.id });
     });
     return map;
-  }, [leadsForDate]);
+  }, [leads]);
     
   const [modifiedLeads, setModifiedLeads] = useState<Record<string, number>>({});
     

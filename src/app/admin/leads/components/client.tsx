@@ -27,8 +27,9 @@ import { toast } from '@/hooks/use-toast';
 import { PeriodSelector } from './period-selector';
 import type { DateRange } from 'react-day-picker';
 import { LeadGrid } from './lead-grid';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type { LeadGridHandle } from './lead-grid';
+import { format } from 'date-fns';
 
 interface LeadClientProps {
   data: Lead[];
@@ -44,14 +45,29 @@ export const LeadClient: React.FC<LeadClientProps> = ({
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const firestore = useFirestore();
   const [isClosingPeriod, setIsClosingPeriod] = useState(false);
-  const [activeDate, setActiveDate] = useState<Date | undefined>();
+  const [activeDate, setActiveDate] = useState<Date>();
   const [isSaving, setIsSaving] = useState(false);
   
-  // Ref to hold the imperative handle of the LeadGrid component
   const leadGridRef = useRef<LeadGridHandle>(null);
 
+  useEffect(() => {
+    // Set initial date on client-side only to prevent hydration mismatch
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    setActiveDate(today);
+  }, []);
 
-  // Filter offers to only include active ones for the grid columns
+  const leadsForActiveDate = useMemo(() => {
+    if (!activeDate || !data) return [];
+    const targetDateString = format(activeDate, 'yyyy-MM-dd');
+    return data.filter(lead => {
+        const leadDate = lead.date instanceof Date ? lead.date : (lead.date as any)?.toDate?.();
+        if (!leadDate) return false;
+        return format(leadDate, 'yyyy-MM-dd') === targetDateString;
+    });
+  }, [data, activeDate]);
+
+
   const activeOffers = useMemo(() => offers.filter(o => o.status === 'Activa'), [offers]);
 
 
@@ -73,7 +89,6 @@ export const LeadClient: React.FC<LeadClientProps> = ({
     }
 
     try {
-      // 1. Fetch all leads within the selected date range directly from Firestore
       const leadsRef = collection(firestore, 'leads');
       const leadsQuery = query(
         leadsRef,
@@ -97,7 +112,6 @@ export const LeadClient: React.FC<LeadClientProps> = ({
         return;
       }
       
-      // 2. Aggregate leads to calculate payment amounts per publisher
       const paymentsToCreate: Record<
         string,
         { amount: number; publisher: Publisher; leads: Lead[] }
@@ -122,7 +136,6 @@ export const LeadClient: React.FC<LeadClientProps> = ({
         paymentsToCreate[lead.publisherId].leads.push(lead);
       });
 
-      // 3. Create payment documents in a batch
       const batch = writeBatch(firestore);
       const paymentsCollection = collection(firestore, 'payments');
 
@@ -186,11 +199,11 @@ export const LeadClient: React.FC<LeadClientProps> = ({
         const publisher = publishers.find(p => p.id === publisherId);
         const offer = offers.find(o => o.id === offerId);
 
-        if (leadId !== 'new') { // Existing lead
+        if (leadId !== 'new') { 
           const docRef = doc(leadsRef, leadId);
           batch.update(docRef, { count });
-        } else { // New lead
-            if (count > 0) { // Only create if there's a value
+        } else { 
+            if (count > 0) { 
                 const newDocRef = doc(leadsRef);
                 batch.set(newDocRef, {
                     id: newDocRef.id,
@@ -207,7 +220,6 @@ export const LeadClient: React.FC<LeadClientProps> = ({
 
       await batch.commit();
       toast({ title: '¡Éxito!', description: 'Los cambios en los leads han sido guardados.'});
-      // Imperatively clear the modified leads in the child component
       leadGridRef.current?.clearModifiedLeads();
     } catch (error) {
       console.error('Error saving leads:', error);
@@ -255,9 +267,7 @@ export const LeadClient: React.FC<LeadClientProps> = ({
                 </Button>
             </div>
             <PeriodSelector
-              onDateChange={(range) => {
-                if (range) setDateRange(range);
-              }}
+              onDateChange={setDateRange}
               onSingleDateChange={setActiveDate}
             />
         </div>
@@ -266,10 +276,10 @@ export const LeadClient: React.FC<LeadClientProps> = ({
       {activeDate && (
         <LeadGrid
             ref={leadGridRef}
-            key={activeDate.toISOString()} // Force re-render when date changes
+            key={activeDate.toISOString()}
             publishers={publishers}
             offers={activeOffers}
-            leads={data}
+            leads={leadsForActiveDate}
             date={activeDate}
         />
       )}
