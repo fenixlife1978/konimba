@@ -1,4 +1,3 @@
-// This is a new file
 'use client';
 import type { Payment } from '@/lib/definitions';
 import { DataTable } from './data-table';
@@ -92,7 +91,7 @@ const ManageRatesModal = () => {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline">
+                <Button>
                     <Cog className="mr-2 h-4 w-4" />
                     Gestión de Tasas
                 </Button>
@@ -154,9 +153,6 @@ export const PaymentClient: React.FC<PaymentClientProps> = ({ data }) => {
         </p>
         <div className="flex items-center gap-2">
             <ManageRatesModal />
-            <Button onClick={() => alert('¡Funcionalidad en desarrollo!')}>
-            Exportar Pagos
-            </Button>
         </div>
       </div>
       <DataTable searchKey="publisherName" columns={columns} data={data} />
