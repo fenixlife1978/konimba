@@ -1,23 +1,32 @@
 'use client';
-import { useState, useMemo } from 'react';
-import type { Payment, Publisher, GlobalOffer, Lead } from '@/lib/definitions';
+import { useState, useMemo, useEffect } from 'react';
+import type { Publisher, GlobalOffer, Lead } from '@/lib/definitions';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { PeriodSelector } from '../leads/components/period-selector';
-import type { DateRange } from 'react-day-picker';
 import { PublisherReportCard } from './components/publisher-report-card';
-import { addDays } from 'date-fns';
+import { startOfMonth, endOfMonth } from 'date-fns';
+import { MonthYearPicker } from './components/month-year-picker';
 
 export default function AdminReportsPage() {
   const firestore = useFirestore();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-    const today = new Date();
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => {
+    const now = new Date();
     return {
-      from: new Date(today.getFullYear(), today.getMonth(), 1),
-      to: today,
+      from: startOfMonth(now),
+      to: endOfMonth(now),
     };
   });
+
+  useEffect(() => {
+    setDateRange({
+        from: startOfMonth(currentDate),
+        to: endOfMonth(currentDate)
+    });
+  }, [currentDate]);
+
 
   const publishersRef = useMemoFirebase(
     () => (firestore ? collection(firestore, 'publishers') : null),
@@ -81,9 +90,9 @@ export default function AdminReportsPage() {
             </p>
         </div>
         <div className="flex items-center gap-4">
-            <PeriodSelector
-                onDateChange={setDateRange}
-                initialRange={dateRange}
+            <MonthYearPicker
+                date={currentDate}
+                onDateChange={setCurrentDate}
             />
             <Button onClick={() => alert('¡Funcionalidad en desarrollo!')}>
             Exportar Reporte
