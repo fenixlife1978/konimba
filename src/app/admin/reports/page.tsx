@@ -5,26 +5,14 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { PublisherReportCard } from './components/publisher-report-card';
-import { startOfMonth, endOfMonth } from 'date-fns';
-import { MonthYearPicker } from './components/month-year-picker';
-import { DateRangePicker } from '@/components/dashboard/date-range-picker';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog';
-import type { DateRange } from 'react-day-picker';
+import { startOfMonth, endOfMonth, isValid } from 'date-fns';
+import { DatePartSelector } from './components/date-part-selector';
+import { toast } from '@/hooks/use-toast';
 
 export default function AdminReportsPage() {
   const firestore = useFirestore();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [isCustomRange, setIsCustomRange] = useState(false);
-  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
 
+  // State for the main date range used by the query
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => {
     const now = new Date();
     return {
@@ -33,27 +21,33 @@ export default function AdminReportsPage() {
     };
   });
 
-  useEffect(() => {
-    if (!isCustomRange) {
-      setDateRange({
-          from: startOfMonth(currentDate),
-          to: endOfMonth(currentDate)
-      });
+  // Separate states for the UI selectors
+  const [startDate, setStartDate] = useState<Date>(dateRange.from);
+  const [endDate, setEndDate] = useState<Date>(dateRange.to);
+
+  const handleApplyRange = () => {
+    if (!isValid(startDate) || !isValid(endDate)) {
+        toast({
+            variant: 'destructive',
+            title: 'Fechas Inválidas',
+            description: 'Por favor, asegúrate de que las fechas de inicio y fin sean válidas.',
+        });
+        return;
     }
-  }, [currentDate, isCustomRange]);
-
-  const handleCustomRangeApply = () => {
-      if (customDateRange?.from && customDateRange?.to) {
-          setIsCustomRange(true);
-          setDateRange({ from: customDateRange.from, to: customDateRange.to });
-      }
-  }
-  
-  const handleMonthYearChange = (date: Date) => {
-    setIsCustomRange(false);
-    setCurrentDate(date);
-  }
-
+    if (endDate < startDate) {
+      toast({
+        variant: 'destructive',
+        title: 'Rango Inválido',
+        description: 'La fecha de fin no puede ser anterior a la fecha de inicio.',
+      });
+      return;
+    }
+    setDateRange({ from: startDate, to: endDate });
+     toast({
+        title: 'Reporte Actualizado',
+        description: 'Mostrando datos para el período seleccionado.',
+    });
+  };
 
   const publishersRef = useMemoFirebase(
     () => (firestore ? collection(firestore, 'publishers') : null),
@@ -107,7 +101,7 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
             <h1 className="text-3xl font-bold tracking-tight font-headline">
                 Reporte de Pago Detallado
@@ -116,31 +110,24 @@ export default function AdminReportsPage() {
                 Selecciona un período para ver el desglose de ganancias por editor.
             </p>
         </div>
-        <div className="flex items-center gap-2">
-            <MonthYearPicker
-                date={currentDate}
-                onDateChange={handleMonthYearChange}
-                disabled={isCustomRange}
-            />
-            <Dialog>
-                <DialogTrigger asChild>
-                    <Button variant="outline">Período Personalizado</Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Seleccionar un rango de fechas</DialogTitle>
-                    </DialogHeader>
-                    <DateRangePicker onDateChange={setCustomDateRange} />
-                    <DialogFooter>
-                        <DialogClose asChild>
-                            <Button onClick={handleCustomRangeApply}>Aplicar Rango</Button>
-                        </DialogClose>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <Button onClick={() => alert('¡Funcionalidad en desarrollo!')}>
-            Exportar Reporte
-            </Button>
+        <div className="flex flex-col items-end gap-4 p-4 border rounded-lg bg-card shadow-sm">
+            <div className="flex flex-wrap items-center justify-end gap-4">
+                <div className="flex flex-col items-start gap-2">
+                    <label className="text-sm font-medium">Fecha de Inicio</label>
+                    <DatePartSelector 
+                        date={startDate}
+                        onDateChange={setStartDate}
+                    />
+                </div>
+                <div className="flex flex-col items-start gap-2">
+                    <label className="text-sm font-medium">Fecha de Fin</label>
+                    <DatePartSelector 
+                        date={endDate}
+                        onDateChange={setEndDate}
+                    />
+                </div>
+            </div>
+             <Button onClick={handleApplyRange} className="mt-2">Aplicar Período</Button>
         </div>
       </div>
 
