@@ -24,12 +24,12 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
-import { PeriodSelector } from './period-selector';
-import type { DateRange } from 'react-day-picker';
+import { DateRange } from 'react-day-picker';
 import { LeadGrid } from './lead-grid';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import type { LeadGridHandle } from './lead-grid';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
+import { DatePartSelector } from '../../reports/components/date-part-selector';
 
 interface LeadClientProps {
   data: Lead[];
@@ -53,9 +53,7 @@ export const LeadClient: React.FC<LeadClientProps> = ({
   useEffect(() => {
     // Set initial date on client-side only to prevent hydration mismatch
     if (!activeDate) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        setActiveDate(today);
+        setActiveDate(startOfDay(new Date()));
     }
   }, [activeDate]);
 
@@ -235,7 +233,7 @@ export const LeadClient: React.FC<LeadClientProps> = ({
   return (
     <>
       <div className="flex flex-col gap-4 mb-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-center gap-2">
                 <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -268,11 +266,15 @@ export const LeadClient: React.FC<LeadClientProps> = ({
                   {isSaving ? 'Guardando...' : 'Guardar Cambios'}
                 </Button>
             </div>
-            <PeriodSelector
-              onDateChange={setDateRange}
-              onSingleDateChange={setActiveDate}
-              initialDate={activeDate}
-            />
+            <div className="flex flex-col items-end gap-2 p-4 border rounded-lg bg-card shadow-sm">
+                <label className="text-sm font-medium self-start">Fecha de Carga</label>
+                {activeDate && (
+                    <DatePartSelector
+                        date={activeDate}
+                        onDateChange={setActiveDate}
+                    />
+                )}
+            </div>
         </div>
       </div>
       

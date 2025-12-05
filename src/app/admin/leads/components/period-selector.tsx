@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { es } from 'date-fns/locale';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { DateRange } from 'react-day-picker';
 
@@ -40,9 +40,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
       onDateChange(range);
     } else {
         if(singleDate && onSingleDateChange) {
-            const startOfDay = new Date(singleDate);
-            startOfDay.setHours(0,0,0,0);
-            onSingleDateChange(startOfDay);
+            onSingleDateChange(startOfDay(singleDate));
         }
     }
   }, [range, singleDate, mode, onDateChange, onSingleDateChange]);
@@ -111,9 +109,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
                 mode === 'single'
                   ? (day) => {
                       if (day instanceof Date) {
-                        const startOfDay = new Date(day);
-                        startOfDay.setHours(0,0,0,0);
-                        setSingleDate(startOfDay);
+                        setSingleDate(startOfDay(day));
                       }
                     }
                   : setRange
