@@ -8,7 +8,9 @@ export default function DashboardRoot() {
 
   useEffect(() => {
     if (!isUserLoading) {
-      if (user?.email === 'faubriciosanchez1@gmail.com') {
+      if (!user) {
+        redirect('/login');
+      } else if (user?.email === 'faubriciosanchez1@gmail.com') {
         redirect('/admin/dashboard');
       } else {
         redirect('/dashboard');
