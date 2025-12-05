@@ -27,7 +27,7 @@ import { toast } from '@/hooks/use-toast';
 import { PeriodSelector } from './period-selector';
 import type { DateRange } from 'react-day-picker';
 import { LeadGrid } from './lead-grid';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 interface LeadClientProps {
   data: Lead[];
@@ -44,11 +44,14 @@ export const LeadClient: React.FC<LeadClientProps> = ({
   const firestore = useFirestore();
   const [isClosingPeriod, setIsClosingPeriod] = useState(false);
   
-  const [activeDate, setActiveDate] = useState<Date>(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
+  const [activeDate, setActiveDate] = useState<Date>(new Date());
+  
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    setActiveDate(today);
+  }, []);
+
 
   const [modifiedLeads, setModifiedLeads] = useState<Record<string, number>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -108,7 +111,7 @@ export const LeadClient: React.FC<LeadClientProps> = ({
 
       leadsInPeriod.forEach((lead) => {
         const offer = offers.find((o) => o.id === lead.offerId);
-        if (!offer) return;
+        if (!offer || lead.count === 0) return;
 
         const paymentAmount = lead.count * offer.payout;
         const publisher = publishers.find((p) => p.id === lead.publisherId);
@@ -140,7 +143,7 @@ export const LeadClient: React.FC<LeadClientProps> = ({
           publisherAvatarUrl: paymentData.publisher.avatarUrl || '',
           amount: paymentData.amount,
           currency: 'USD',
-          paymentDate: serverTimestamp(),
+          createdAt: serverTimestamp(),
           paymentMethod: paymentData.publisher.paymentMethod,
           status: 'Pendiente',
           notes: `Pago generado por cierre de periodo de ${dateRange.from.toLocaleDateString()} a ${dateRange.to.toLocaleDateString()}. Incluye ${paymentData.leads.length} registros de leads.`,

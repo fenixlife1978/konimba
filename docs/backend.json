@@ -128,47 +128,28 @@
       "type": "object",
       "description": "Represents a payment made to a publisher.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Payment entity."
-        },
-        "publisherId": {
-          "type": "string",
-          "description": "Reference to Publisher. (Relationship: Publisher 1:N Payment)"
-        },
-        "amount": {
-          "type": "number",
-          "description": "Amount paid to the publisher."
-        },
-        "currency": {
-          "type": "string",
-          "description": "Currency of the payment amount."
-        },
-        "paymentDate": {
-          "type": "string",
-          "description": "Date when the payment was made.",
-          "format": "date-time"
-        },
-        "paymentMethod": {
-          "type": "string",
-          "description": "Method used for the payment (e.g., bank transfer, PayPal)."
-        },
-        "receiptId": {
-          "type": "string",
-          "description": "Reference to Receipt. (Relationship: Receipt 1:1 Payment)"
-        },
-        "notes": {
-          "type": "string",
-          "description": "Any notes related to this payment."
-        }
+        "id": { "type": "string", "description": "Unique identifier for the Payment entity." },
+        "publisherId": { "type": "string", "description": "Reference to Publisher." },
+        "amount": { "type": "number", "description": "Amount paid to the publisher in original currency (USD)." },
+        "currency": { "type": "string", "enum": ["USD"], "description": "Currency of the original amount." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Date when the payment record was generated." },
+        "paidAt": { "type": "string", "format": "date-time", "description": "Date when the payment was actually made." },
+        "paymentMethod": { "type": "string", "description": "Method used for the payment." },
+        "status": { "type": "string", "enum": ["Pagado", "Pendiente", "Fallido"], "description": "Status of the payment." },
+        "exchangeRate": { "type": "number", "description": "Exchange rate applied at the time of payment, if applicable." },
+        "finalAmount": { "type": "number", "description": "The final amount paid in the local currency after conversion." },
+        "finalCurrency": { "type": "string", "enum": ["VES", "COP"], "description": "The final currency of the payment after conversion." },
+        "receiptId": { "type": "string", "description": "Reference to a receipt, if any." },
+        "notes": { "type": "string", "description": "Any notes related to this payment." }
       },
       "required": [
         "id",
         "publisherId",
         "amount",
         "currency",
-        "paymentDate",
-        "paymentMethod"
+        "createdAt",
+        "paymentMethod",
+        "status"
       ]
     },
     "Receipt": {

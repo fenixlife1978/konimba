@@ -50,7 +50,7 @@ export type Lead = {
   id: string;
   publisherId: string;
   offerId: string;
-  date: Timestamp | Date | string;
+  date: Timestamp | Date;
   count: number;
   publisherName?: string;
   offerName?: string;
@@ -62,7 +62,8 @@ export type Payment = {
   publisherId: string;
   amount: number;
   currency: 'USD';
-  paymentDate: Timestamp | Date;
+  createdAt: Timestamp | Date;
+  paidAt?: Timestamp | Date;
   paymentMethod: 'PAYPAL' | 'BINANCE' | 'BOLIVARES' | 'PESOS COLOMBIANOS';
   receiptId?: string;
   notes?: string;
