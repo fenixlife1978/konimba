@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, forwardRef, useImperativeHandle } from 'react';
 import type { Publisher, GlobalOffer, Lead } from '@/lib/definitions';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,23 +18,26 @@ interface LeadGridProps {
   offers: GlobalOffer[];
   leads: Lead[];
   date: Date;
-  onLeadChange: (publisherId: string, offerId: string, count: number, leadId?: string) => void;
 }
 
-export const LeadGrid: React.FC<LeadGridProps> = ({
+export type LeadGridHandle = {
+  getModifiedLeads: () => Record<string, number>;
+};
+
+export const LeadGrid = forwardRef<LeadGridHandle, LeadGridProps>(({
   publishers,
   offers,
   leads,
   date,
-  onLeadChange,
-}) => {
+}, ref) => {
+  
   // Memoize leads for the active date for performance
   const leadsForDate = useMemo(() => {
     const targetDateString = date.toISOString().split('T')[0];
-    return leads.filter(lead => {
-        const leadDate = lead.date instanceof Date ? lead.date : (lead.date as any).toDate();
-        return leadDate.toISOString().split('T')[0] === targetDateString;
-    });
+    return leads?.filter(lead => {
+        const leadDate = lead.date instanceof Date ? lead.date : (lead.date as any)?.toDate?.();
+        return leadDate?.toISOString().split('T')[0] === targetDateString;
+    }) || [];
   }, [leads, date]);
 
   // Create a map for quick lookup: 'publisherId_offerId' -> {count, id}
@@ -45,16 +48,32 @@ export const LeadGrid: React.FC<LeadGridProps> = ({
     });
     return map;
   }, [leadsForDate]);
-
+    
+  const [modifiedLeads, setModifiedLeads] = useState<Record<string, number>>({});
+    
+  useImperativeHandle(ref, () => ({
+    getModifiedLeads: () => {
+      const leadsToReturn = { ...modifiedLeads };
+      setModifiedLeads({}); // Clear after getting them
+      return leadsToReturn;
+    }
+  }));
 
   const handleInputChange = (publisherId: string, offerId: string, value: string) => {
     const count = parseInt(value, 10);
+    const existingLead = leadsMap.get(`${publisherId}_${offerId}`);
+    const key = `${publisherId}__${offerId}__${existingLead?.id || 'new'}`;
+
     if (!isNaN(count) && count >= 0) {
-      const existingLead = leadsMap.get(`${publisherId}_${offerId}`);
-      onLeadChange(publisherId, offerId, count, existingLead?.id);
+      setModifiedLeads(prev => ({
+        ...prev,
+        [key]: count,
+      }));
     } else if (value === '') {
-        const existingLead = leadsMap.get(`${publisherId}_${offerId}`);
-        onLeadChange(publisherId, offerId, 0, existingLead?.id);
+        setModifiedLeads(prev => ({
+            ...prev,
+            [key]: 0,
+        }));
     }
   };
 
@@ -89,14 +108,18 @@ export const LeadGrid: React.FC<LeadGridProps> = ({
                 </TableCell>
                 {offers.map(offer => {
                     const leadInfo = leadsMap.get(`${publisher.id}_${offer.id}`);
+                    const key = `${publisher.id}__${offer.id}__${leadInfo?.id || 'new'}`;
+                    const displayValue = key in modifiedLeads ? modifiedLeads[key] : leadInfo?.count;
+
                     return (
                         <TableCell key={`${publisher.id}-${offer.id}`} className="p-1">
                             <Input
-                            type="number"
-                            className="w-20 text-center"
-                            placeholder="0"
-                            defaultValue={leadInfo?.count || ''}
-                            onChange={(e) => handleInputChange(publisher.id, offer.id, e.target.value)}
+                              type="number"
+                              className="w-20 text-center"
+                              placeholder="0"
+                              defaultValue={displayValue || ''}
+                              onChange={(e) => handleInputChange(publisher.id, offer.id, e.target.value)}
+                              min={0}
                             />
                         </TableCell>
                     );
@@ -109,4 +132,6 @@ export const LeadGrid: React.FC<LeadGridProps> = ({
       </ScrollArea>
     </Card>
   );
-};
+});
+
+LeadGrid.displayName = "LeadGrid";

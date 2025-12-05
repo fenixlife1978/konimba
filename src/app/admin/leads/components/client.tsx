@@ -27,7 +27,7 @@ import { toast } from '@/hooks/use-toast';
 import { PeriodSelector } from './period-selector';
 import type { DateRange } from 'react-day-picker';
 import { LeadGrid } from './lead-grid';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 
 interface LeadClientProps {
   data: Lead[];
@@ -43,18 +43,11 @@ export const LeadClient: React.FC<LeadClientProps> = ({
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const firestore = useFirestore();
   const [isClosingPeriod, setIsClosingPeriod] = useState(false);
-  
-  const [activeDate, setActiveDate] = useState<Date>(new Date());
-  
-  useEffect(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    setActiveDate(today);
-  }, []);
-
-
-  const [modifiedLeads, setModifiedLeads] = useState<Record<string, number>>({});
+  const [activeDate, setActiveDate] = useState<Date | undefined>();
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Ref to hold the imperative handle of the LeadGrid component
+  const leadGridRef = useRef<{ getModifiedLeads: () => Record<string, number> }>(null);
 
 
   // Filter offers to only include active ones for the grid columns
@@ -171,12 +164,13 @@ export const LeadClient: React.FC<LeadClientProps> = ({
   };
 
   const handleSave = async () => {
-    if (Object.keys(modifiedLeads).length === 0) {
+    const modifiedLeads = leadGridRef.current?.getModifiedLeads();
+    if (!modifiedLeads || Object.keys(modifiedLeads).length === 0) {
       toast({ title: 'Sin cambios', description: 'No hay modificaciones para guardar.' });
       return;
     }
-    if (!firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Servicio de base de datos no disponible.' });
+    if (!firestore || !activeDate) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Servicio de base de datos no disponible o fecha no seleccionada.' });
       return;
     }
 
@@ -195,22 +189,24 @@ export const LeadClient: React.FC<LeadClientProps> = ({
           const docRef = doc(leadsRef, leadId);
           batch.update(docRef, { count });
         } else { // New lead
-          const newDocRef = doc(leadsRef);
-          batch.set(newDocRef, {
-            id: newDocRef.id,
-            publisherId,
-            offerId,
-            date: activeDate,
-            count,
-            publisherName: publisher?.name || 'N/A',
-            offerName: offer?.name || 'N/A'
-          });
+            if (count > 0) { // Only create if there's a value
+                const newDocRef = doc(leadsRef);
+                batch.set(newDocRef, {
+                    id: newDocRef.id,
+                    publisherId,
+                    offerId,
+                    date: activeDate,
+                    count,
+                    publisherName: publisher?.name || 'N/A',
+                    offerName: offer?.name || 'N/A'
+                });
+            }
         }
       }
 
       await batch.commit();
       toast({ title: '¡Éxito!', description: 'Los cambios en los leads han sido guardados.'});
-      setModifiedLeads({});
+      leadGridRef.current?.getModifiedLeads && Object.keys(modifiedLeads).forEach(key => delete modifiedLeads[key]); // Clear modified leads
     } catch (error) {
       console.error('Error saving leads:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron guardar los cambios.' });
@@ -256,32 +252,25 @@ export const LeadClient: React.FC<LeadClientProps> = ({
                   {isSaving ? 'Guardando...' : 'Guardar Cambios'}
                 </Button>
             </div>
-            <PeriodSelector 
+            <PeriodSelector
               onDateChange={(range) => {
-                if (!range) { // When closing period, we need a range.
-                  setDateRange(undefined);
-                } else if (range.from && range.to) {
-                  setDateRange(range);
-                }
+                if (range) setDateRange(range);
               }}
-              onSingleDateChange={setActiveDate} 
+              onSingleDateChange={setActiveDate}
             />
         </div>
       </div>
       
-      <LeadGrid
-        key={activeDate.toISOString()} // Force re-render when date changes
-        publishers={publishers}
-        offers={activeOffers}
-        leads={data}
-        date={activeDate}
-        onLeadChange={(publisherId, offerId, count, leadId) => {
-          setModifiedLeads(prev => ({
-            ...prev,
-            [`${publisherId}__${offerId}__${leadId || 'new'}`]: count,
-          }));
-        }}
-      />
+      {activeDate && (
+        <LeadGrid
+            ref={leadGridRef}
+            key={activeDate.toISOString()} // Force re-render when date changes
+            publishers={publishers}
+            offers={activeOffers}
+            leads={data}
+            date={activeDate}
+        />
+      )}
     </>
   );
 };
