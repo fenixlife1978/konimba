@@ -256,7 +256,16 @@ export const LeadClient: React.FC<LeadClientProps> = ({
                   {isSaving ? 'Guardando...' : 'Guardar Cambios'}
                 </Button>
             </div>
-            <PeriodSelector onDateChange={setDateRange} onSingleDateChange={setActiveDate} />
+            <PeriodSelector 
+              onDateChange={(range) => {
+                if (!range) { // When closing period, we need a range.
+                  setDateRange(undefined);
+                } else if (range.from && range.to) {
+                  setDateRange(range);
+                }
+              }}
+              onSingleDateChange={setActiveDate} 
+            />
         </div>
       </div>
       

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { es } from 'date-fns/locale';
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { DateRange } from 'react-day-picker';
 
@@ -23,9 +23,8 @@ interface PeriodSelectorProps {
 export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   onDateChange,
   onSingleDateChange,
-  initialRange,
 }) => {
-  const [range, setRange] = useState<DateRange | undefined>(initialRange);
+  const [range, setRange] = useState<DateRange | undefined>();
   const [singleDate, setSingleDate] = useState<Date | undefined>();
   const [mode, setMode] = useState<'single' | 'range'>(onSingleDateChange ? 'single' : 'range');
 
@@ -36,10 +35,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         setSingleDate(today);
         onSingleDateChange(today);
     }
-    if (initialRange) {
-        setRange(initialRange);
-    }
-  }, []);
+  }, [onSingleDateChange]);
 
   useEffect(() => {
     if (mode === 'range') {
@@ -71,7 +67,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
             onClick={() => setMode('range')}
             className="h-8 px-3"
           >
-            Rango
+            Cerrar Período
           </Button>
         </div>
         <Popover>
@@ -97,7 +93,9 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
                   format(range.from, 'LLL dd, y', { locale: es })
                 )
               ) : (
-                <span>Elige una fecha</span>
+                <span>
+                    {mode === 'single' ? 'Elige un día' : 'Elige un rango'}
+                </span>
               )}
             </Button>
           </PopoverTrigger>
@@ -122,6 +120,9 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
               }
               numberOfMonths={mode === 'range' ? 2 : 1}
               locale={es}
+              captionLayout="dropdown-buttons"
+              fromYear={2020}
+              toYear={new Date().getFullYear() + 5}
             />
           </PopoverContent>
         </Popover>
