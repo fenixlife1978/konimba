@@ -68,6 +68,18 @@ export function SettingsForm() {
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Check file size (1MB limit)
+      if (file.size > 1048576) {
+        toast({
+          variant: 'destructive',
+          title: 'Archivo demasiado grande',
+          description: 'El tamaño del logo no puede exceder 1 MB.',
+        });
+        // Clear the input value
+        event.target.value = '';
+        return;
+      }
+      
       if (file.type === 'image/png' || file.type === 'image/jpeg') {
         const reader = new FileReader();
         reader.onloadend = () => {
