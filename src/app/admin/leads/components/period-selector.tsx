@@ -23,12 +23,19 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   onDateChange,
   onSingleDateChange,
 }) => {
-  const [range, setRange] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: addDays(new Date(), 7),
-  });
-  const [singleDate, setSingleDate] = useState<Date | undefined>(new Date());
+  const [range, setRange] = useState<DateRange | undefined>();
+  const [singleDate, setSingleDate] = useState<Date | undefined>();
   const [mode, setMode] = useState<'single' | 'range'>('single');
+
+  // Set initial date on client-side only to prevent hydration mismatch
+  useEffect(() => {
+    const today = new Date();
+    setRange({
+      from: today,
+      to: addDays(today, 7),
+    });
+    setSingleDate(today);
+  }, []);
 
   useEffect(() => {
     if (mode === 'range') {
