@@ -13,20 +13,24 @@ export default function AdminReportsPage() {
   const firestore = useFirestore();
 
   // State for the main date range used by the query
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => {
-    const now = new Date();
-    return {
-      from: startOfMonth(now),
-      to: endOfMonth(now),
-    };
-  });
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null);
 
   // Separate states for the UI selectors
-  const [startDate, setStartDate] = useState<Date>(dateRange.from);
-  const [endDate, setEndDate] = useState<Date>(dateRange.to);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  
+  useEffect(() => {
+    // Set initial date on client-side only to prevent hydration mismatch
+    const now = new Date();
+    const from = startOfMonth(now);
+    const to = endOfMonth(now);
+    setStartDate(from);
+    setEndDate(to);
+    setDateRange({ from, to });
+  }, []);
 
   const handleApplyRange = () => {
-    if (!isValid(startDate) || !isValid(endDate)) {
+    if (!startDate || !endDate || !isValid(startDate) || !isValid(endDate)) {
         toast({
             variant: 'destructive',
             title: 'Fechas Inválidas',
@@ -97,7 +101,7 @@ export default function AdminReportsPage() {
   }, [publishers, leads]);
 
 
-  const isLoading = publishersLoading || offersLoading || leadsLoading;
+  const isLoading = publishersLoading || offersLoading || leadsLoading || !dateRange;
 
   return (
     <div className="space-y-8">
@@ -114,17 +118,21 @@ export default function AdminReportsPage() {
             <div className="flex flex-wrap items-center justify-end gap-4">
                 <div className="flex flex-col items-start gap-2">
                     <label className="text-sm font-medium">Fecha de Inicio</label>
-                    <DatePartSelector 
-                        date={startDate}
-                        onDateChange={setStartDate}
-                    />
+                    {startDate && (
+                        <DatePartSelector 
+                            date={startDate}
+                            onDateChange={setStartDate}
+                        />
+                    )}
                 </div>
                 <div className="flex flex-col items-start gap-2">
                     <label className="text-sm font-medium">Fecha de Fin</label>
-                    <DatePartSelector 
-                        date={endDate}
-                        onDateChange={setEndDate}
-                    />
+                    {endDate && (
+                        <DatePartSelector 
+                            date={endDate}
+                            onDateChange={setEndDate}
+                        />
+                    )}
                 </div>
             </div>
              <Button onClick={handleApplyRange} className="mt-2">Aplicar Período</Button>
@@ -133,7 +141,7 @@ export default function AdminReportsPage() {
 
       {isLoading ? (
         <div className="text-center text-muted-foreground">Cargando reportes...</div>
-      ) : publishersWithLeads.length > 0 && offers ? (
+      ) : publishersWithLeads.length > 0 && offers && dateRange ? (
          <div className="space-y-6">
             {publishersWithLeads.map(publisher => (
                 <PublisherReportCard 
@@ -141,7 +149,7 @@ export default function AdminReportsPage() {
                     publisher={publisher}
                     leads={publisher.leads}
                     offers={offers}
-                    dateRange={dateRange!}
+                    dateRange={dateRange}
                 />
             ))}
          </div>
