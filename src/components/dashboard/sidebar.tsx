@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const publisherNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
@@ -74,7 +75,10 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/50 shadow-lg">
       <SidebarHeader>
         <div className="flex w-full items-center justify-between p-2">
-            <div className="text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+            <div className="text-sidebar-foreground group-data-[collapsible=icon]:hidden w-32 h-10">
+                <KonimPayLogo />
+            </div>
+             <div className="text-sidebar-foreground group-data-[collapsible=expanded]:hidden w-8 h-8">
                 <KonimPayLogo />
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground" onClick={toggleSidebar}>

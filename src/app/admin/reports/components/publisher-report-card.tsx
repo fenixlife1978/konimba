@@ -1,5 +1,5 @@
 'use client';
-import type { Publisher, Lead, GlobalOffer } from '@/lib/definitions';
+import type { Publisher, Lead, GlobalOffer, CompanyProfile } from '@/lib/definitions';
 import {
   Card,
   CardContent,
@@ -22,6 +22,9 @@ import { useMemo } from 'react';
 import { format, eachDayOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { KonimPayLogo } from '@/components/icons';
 
 interface PublisherReportCardProps {
   publisher: Publisher;
@@ -35,6 +38,27 @@ type LeadsByOfferAndDate = {
     [date: string]: number;
   };
 };
+
+const ReportHeader = () => {
+    const firestore = useFirestore();
+    const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'company_profile', 'settings') : null, [firestore]);
+    const { data: companyProfile } = useDoc<CompanyProfile>(settingsRef);
+    
+    return (
+        <div className="flex items-center justify-between p-4 bg-muted/20 border-b">
+            <div className="h-12 w-32 relative">
+                <KonimPayLogo />
+            </div>
+            {companyProfile && (
+                <div className="text-right text-xs text-muted-foreground">
+                    <p className="font-bold text-sm text-foreground">{companyProfile.name}</p>
+                    <p>{companyProfile.address}</p>
+                    <p>Tel: {companyProfile.phone} - {companyProfile.country}</p>
+                </div>
+            )}
+        </div>
+    )
+}
 
 export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
   publisher,
@@ -98,6 +122,7 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
 
   return (
     <Card className="overflow-hidden">
+      <ReportHeader />
       <CardHeader className="flex flex-row items-center gap-4 bg-muted/30">
         <Avatar className="h-12 w-12">
           <AvatarImage src={publisher.avatarUrl} alt={publisher.name} />
@@ -155,7 +180,7 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
             </TableBody>
              <UiTableFooter>
                 <TableRow>
-                    <TableCell colSpan={daysInPeriod.length + 2} className="text-right font-bold text-lg">Total a Pagar</TableCell>
+                    <TableCell colSpan={daysInPeriod.length + 3} className="text-right font-bold text-lg">Total a Pagar</TableCell>
                     <TableCell className="text-right font-bold text-lg">{totalLeads}</TableCell>
                     <TableCell className="text-right font-bold text-lg pr-4">
                         {totalAmount.toLocaleString('es-US', { style: 'currency', currency: 'USD' })}
