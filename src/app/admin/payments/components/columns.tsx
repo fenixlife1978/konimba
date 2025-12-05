@@ -1,4 +1,3 @@
-// This is a new file
 'use client';
 
 import Image from 'next/image';
@@ -22,7 +21,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogDescription
 } from '@/components/ui/dialog';
@@ -238,3 +236,5 @@ export const columns: ColumnDef<Payment>[] = [
     },
   },
 ];
+
+    
