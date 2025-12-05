@@ -63,6 +63,13 @@ export function AppSidebar() {
 
   const settingsHref = isAdmin ? '/admin/settings' : '/settings';
 
+  const isActive = (href: string) => {
+    if (href === '/admin/dashboard') return pathname === href;
+    if (href === '/dashboard') return pathname === href;
+    return pathname.startsWith(href);
+  };
+
+
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/50 shadow-lg">
       <SidebarHeader>
@@ -82,7 +89,7 @@ export function AppSidebar() {
             <Link href={item.href} passHref>
               <SidebarMenuButton
                 as="a"
-                isActive={pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin/dashboard' || pathname.startsWith('/admin/payments') || pathname.startsWith('/admin/reports'))}
+                isActive={isActive(item.href)}
                 tooltip={item.label}
               >
                   <item.icon />

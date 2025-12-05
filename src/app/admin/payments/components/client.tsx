@@ -91,7 +91,7 @@ const ManageRatesModal = () => {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>
+                <Button variant="default">
                     <Cog className="mr-2 h-4 w-4" />
                     Gestión de Tasas
                 </Button>
@@ -155,7 +155,7 @@ export const PaymentClient: React.FC<PaymentClientProps> = ({ data }) => {
             <ManageRatesModal />
         </div>
       </div>
-      <DataTable searchKey="publisherName" columns={columns} data={data} />
+      <DataTable columns={columns} data={data} />
     </>
   );
 };

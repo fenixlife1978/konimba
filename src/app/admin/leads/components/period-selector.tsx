@@ -16,32 +16,36 @@ import type { DateRange } from 'react-day-picker';
 
 interface PeriodSelectorProps {
   onDateChange: (range: DateRange | undefined) => void;
-  onSingleDateChange: (date: Date) => void;
+  onSingleDateChange?: (date: Date) => void;
+  initialRange?: DateRange;
 }
 
 export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   onDateChange,
   onSingleDateChange,
+  initialRange,
 }) => {
-  const [range, setRange] = useState<DateRange | undefined>();
+  const [range, setRange] = useState<DateRange | undefined>(initialRange);
   const [singleDate, setSingleDate] = useState<Date | undefined>();
-  const [mode, setMode] = useState<'single' | 'range'>('single');
+  const [mode, setMode] = useState<'single' | 'range'>(onSingleDateChange ? 'single' : 'range');
 
   // Set initial date on client-side only to prevent hydration mismatch
   useEffect(() => {
-    const today = new Date();
-    setRange({
-      from: today,
-      to: addDays(today, 7),
-    });
-    setSingleDate(today);
+    if (onSingleDateChange) {
+        const today = new Date();
+        setSingleDate(today);
+        onSingleDateChange(today);
+    }
+    if (initialRange) {
+        setRange(initialRange);
+    }
   }, []);
 
   useEffect(() => {
     if (mode === 'range') {
       onDateChange(range);
     } else {
-        if(singleDate) {
+        if(singleDate && onSingleDateChange) {
             const startOfDay = new Date(singleDate);
             startOfDay.setHours(0,0,0,0);
             onSingleDateChange(startOfDay);
@@ -53,19 +57,21 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     <div className="flex items-end gap-2 p-2 border rounded-lg bg-card">
       <div className="grid gap-1">
         <div className="flex items-center gap-1">
-          <Button
-            variant={mode === 'single' ? 'secondary' : 'ghost'}
-            onClick={() => setMode('single')}
-            className="h-8 px-3"
-          >
-            Día
-          </Button>
+            {onSingleDateChange && (
+                <Button
+                    variant={mode === 'single' ? 'secondary' : 'ghost'}
+                    onClick={() => setMode('single')}
+                    className="h-8 px-3"
+                >
+                    Día
+                </Button>
+            )}
           <Button
             variant={mode === 'range' ? 'secondary' : 'ghost'}
             onClick={() => setMode('range')}
             className="h-8 px-3"
           >
-            Rango (para Cierre)
+            Rango
           </Button>
         </div>
         <Popover>
