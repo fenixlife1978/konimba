@@ -48,12 +48,20 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { CompanyProfile } from '@/lib/definitions';
 import { useDoc, useMemoFirebase } from '@/firebase';
+
+
+interface ColumnsProps {
+    liveRates?: {
+        usdToVesRate?: number;
+        usdToCopRate?: number;
+    }
+}
 
 const markAsPaidSchema = z.object({
   paidAt: z.date({ required_error: 'La fecha de pago es obligatoria.'}),
@@ -81,13 +89,14 @@ const MarkAsPaidModal = ({ payment, companyProfile, onConfirm }: { payment: Paym
         }
     });
      
-    // Watch for changes in companyProfile to update default rate
-    useState(() => {
-        form.reset({
-            paidAt: new Date(),
-            exchangeRate: defaultExchangeRate
-        });
-    }, [defaultExchangeRate, form]);
+    useEffect(() => {
+        if(companyProfile) {
+            form.reset({
+                paidAt: new Date(),
+                exchangeRate: defaultExchangeRate
+            });
+        }
+    }, [companyProfile, defaultExchangeRate, form]);
 
 
     const onSubmit = (data: MarkAsPaidFormValues) => {
@@ -231,7 +240,7 @@ const DeleteConfirmationDialog = ({ payment, onConfirm }: { payment: Payment; on
 };
 
 
-export const columns: ColumnDef<Payment>[] = [
+export const columns = ({ liveRates = {} }: ColumnsProps): ColumnDef<Payment>[] => [
   {
     accessorKey: 'publisherName',
     header: 'Editor',
@@ -267,18 +276,35 @@ export const columns: ColumnDef<Payment>[] = [
     header: 'Total Pagado',
     cell: ({ row }) => {
       const payment = row.original;
-      if (payment.status !== 'Pagado') return <span className="text-muted-foreground">N/A</span>;
       
-      if (payment.finalAmount && payment.finalCurrency) {
-        const finalAmountFormatted = new Intl.NumberFormat(payment.finalCurrency === 'VES' ? 'es-VE' : 'es-CO', {
-          style: 'currency',
-          currency: payment.finalCurrency,
-        }).format(payment.finalAmount);
-        return <div className="font-medium">{finalAmountFormatted}</div>;
+      if (payment.status === 'Pagado') {
+        if (payment.finalAmount && payment.finalCurrency) {
+          const finalAmountFormatted = new Intl.NumberFormat(payment.finalCurrency === 'VES' ? 'es-VE' : 'es-CO', {
+            style: 'currency',
+            currency: payment.finalCurrency,
+          }).format(payment.finalAmount);
+          return <div className="font-medium">{finalAmountFormatted}</div>;
+        }
+         // For paid PayPal/Binance
+         return <div className="font-medium">{new Intl.NumberFormat('es-US', { style: 'currency', currency: 'USD' }).format(payment.amount)} ({payment.paymentMethod})</div>;
+      }
+      
+      // For Pending payments
+      if (payment.status === 'Pendiente') {
+         if (payment.paymentMethod === 'Bolivares' && liveRates.usdToVesRate) {
+            const converted = payment.amount * liveRates.usdToVesRate;
+            return <div className="font-medium text-muted-foreground">{new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'VES'}).format(converted)}</div>;
+         }
+         if (payment.paymentMethod === 'Pesos Colombianos' && liveRates.usdToCopRate) {
+            const converted = payment.amount * liveRates.usdToCopRate;
+            return <div className="font-medium text-muted-foreground">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP'}).format(converted)}</div>;
+         }
+         if(payment.paymentMethod === 'Paypal' || payment.paymentMethod === 'USDT') {
+             return <div className="font-medium text-muted-foreground">{new Intl.NumberFormat('es-US', { style: 'currency', currency: 'USD' }).format(payment.amount)} ({payment.paymentMethod})</div>;
+         }
       }
 
-      // For PayPal/Binance
-       return <div className="font-medium">{new Intl.NumberFormat('es-US', { style: 'currency', currency: 'USD' }).format(payment.amount)} ({payment.paymentMethod})</div>;
+      return <span className="text-muted-foreground">N/A</span>;
     },
   },
    {
@@ -288,6 +314,14 @@ export const columns: ColumnDef<Payment>[] = [
       const payment = row.original;
       if (payment.status === 'Pagado' && payment.exchangeRate) {
         return <div>{payment.exchangeRate}</div>;
+      }
+       if (payment.status === 'Pendiente') {
+         if (payment.paymentMethod === 'Bolivares' && liveRates.usdToVesRate) {
+            return <div className="text-muted-foreground">{liveRates.usdToVesRate}</div>;
+         }
+         if (payment.paymentMethod === 'Pesos Colombianos' && liveRates.usdToCopRate) {
+            return <div className="text-muted-foreground">{liveRates.usdToCopRate}</div>;
+         }
       }
       return <span className="text-muted-foreground">N/A</span>;
     },

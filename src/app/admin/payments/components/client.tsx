@@ -11,7 +11,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
@@ -42,7 +41,7 @@ const ratesSchema = z.object({
 type RatesFormValues = z.infer<typeof ratesSchema>;
 
 
-const ManageRatesModal = () => {
+const ManageRatesModal = ({ onRatesUpdate }: { onRatesUpdate: (rates: RatesFormValues) => void }) => {
     const [open, setOpen] = useState(false);
     const firestore = useFirestore();
     const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'company_profile', 'settings') : null, [firestore]);
@@ -59,12 +58,14 @@ const ManageRatesModal = () => {
 
     useEffect(() => {
         if (companyProfile) {
-            form.reset({
+            const newValues = {
                 usdToVesRate: companyProfile.usdToVesRate,
                 usdToCopRate: companyProfile.usdToCopRate,
-            });
+            };
+            form.reset(newValues);
+            onRatesUpdate(newValues);
         }
-    }, [companyProfile, form]);
+    }, [companyProfile, form, onRatesUpdate]);
 
     const onSubmit = async (data: RatesFormValues) => {
         if (!settingsRef) return;
@@ -75,6 +76,7 @@ const ManageRatesModal = () => {
                 title: '¡Éxito!',
                 description: 'Las tasas de cambio han sido actualizadas.',
             });
+            onRatesUpdate(data);
             setOpen(false);
         } catch (error) {
             console.error('Error saving rates:', error);
@@ -145,6 +147,8 @@ const ManageRatesModal = () => {
 }
 
 export const PaymentClient: React.FC<PaymentClientProps> = ({ data }) => {
+  const [liveRates, setLiveRates] = useState<RatesFormValues>({});
+
   return (
     <>
        <div className="flex items-center justify-between mb-4">
@@ -152,10 +156,10 @@ export const PaymentClient: React.FC<PaymentClientProps> = ({ data }) => {
           Aquí puedes revisar y procesar todos los pagos pendientes generados.
         </p>
         <div className="flex items-center gap-2">
-            <ManageRatesModal />
+            <ManageRatesModal onRatesUpdate={setLiveRates} />
         </div>
       </div>
-      <DataTable columns={columns} data={data} />
+      <DataTable columns={columns({ liveRates })} data={data} />
     </>
   );
 };
