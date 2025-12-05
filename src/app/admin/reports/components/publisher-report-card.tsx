@@ -79,6 +79,7 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
         return {
             offerId: offerId,
             offerName: offer?.name || `Oferta ${offerId}`,
+            offerPayout: offer?.payout || 0,
             dailyLeads: leadsByOfferAndDate[offerId] || {}
         };
     }).sort((a,b) => a.offerName.localeCompare(b.offerName));
@@ -108,6 +109,7 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
                 <TableHead className="sticky left-0 bg-card z-10 w-[200px] font-semibold">
                     Oferta
                 </TableHead>
+                <TableHead className="text-right">Valor (USD)</TableHead>
                 {daysInPeriod.map((day) => (
                     <TableHead key={day.toISOString()} className="text-center text-xs px-2">
                         {format(day, 'dd')}
@@ -117,12 +119,15 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {reportData.map(({ offerId, offerName, dailyLeads }) => {
+                {reportData.map(({ offerId, offerName, offerPayout, dailyLeads }) => {
                     const totalOfferLeads = Object.values(dailyLeads).reduce((sum, count) => sum + count, 0);
                     return (
                         <TableRow key={offerId}>
                             <TableCell className="sticky left-0 bg-card z-10 font-medium truncate max-w-[200px]">
                                 {offerName}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm">
+                              {offerPayout.toLocaleString('es-US', { style: 'currency', currency: 'USD' })}
                             </TableCell>
                             {daysInPeriod.map((day) => {
                                 const dateStr = format(day, 'yyyy-MM-dd');
