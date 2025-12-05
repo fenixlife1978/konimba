@@ -15,13 +15,14 @@ import { OverviewChart } from '@/components/dashboard/overview-chart';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, getDocs } from 'firebase/firestore';
 import React from 'react';
-import type { GlobalOffer, Lead, Publisher } from '@/lib/definitions';
+import type { GlobalOffer, Lead, Publisher, Payment } from '@/lib/definitions';
+import { Timestamp } from 'firebase/firestore';
 
 export default function AdminDashboardPage() {
   const firestore = useFirestore();
 
   const [stats, setStats] = React.useState({
-    totalPaymentForPeriod: 0,
+    lastTotalPayment: 0,
     totalPublishers: 0,
     totalPayments: 0,
     pendingPayments: 0,
@@ -30,47 +31,45 @@ export default function AdminDashboardPage() {
   const publishersRef = useMemoFirebase(() => firestore ? collection(firestore, 'publishers') : null, [firestore]);
   const { data: publishers, isLoading: publishersLoading } = useCollection<Publisher>(publishersRef);
 
-  const leadsRef = useMemoFirebase(() => firestore ? collection(firestore, 'leads') : null, [firestore]);
-  const { data: leads, isLoading: leadsLoading } = useCollection<Lead>(leadsRef);
+  const allPaymentsRef = useMemoFirebase(() => firestore ? collection(firestore, 'payments') : null, [firestore]);
+  const { data: allPayments, isLoading: paymentsLoading } = useCollection<Payment>(allPaymentsRef);
 
-  const offersRef = useMemoFirebase(() => firestore ? collection(firestore, 'global-offers') : null, [firestore]);
-  const { data: offers, isLoading: offersLoading } = useCollection<GlobalOffer>(offersRef);
 
   React.useEffect(() => {
-    if (firestore && publishers && leads && offers) {
+    if (firestore && publishers) {
       const fetchStats = async () => {
         let totalPayments = 0;
         let pendingPayments = 0;
-        let totalPaymentForPeriod = 0;
+        let lastTotalPayment = 0;
 
-        // Calculate total payment for the current period based on leads
-        if (leads && offers) {
-            totalPaymentForPeriod = leads.reduce((acc, lead) => {
-                const offer = offers.find(o => o.id === lead.offerId);
-                if (offer && offer.payout) {
-                    return acc + (lead.count * offer.payout);
-                }
-                return acc;
-            }, 0);
-        }
+        if (allPayments) {
+            totalPayments = allPayments.length;
+            pendingPayments = allPayments.filter(p => p.status === 'Pendiente').length;
 
-        if (publishers && firestore) {
-          for (const publisher of publishers) {
-            const paymentsRef = collection(firestore, 'publishers', publisher.id, 'payments');
-            const paymentsSnapshot = await getDocs(paymentsRef);
-            paymentsSnapshot.forEach(doc => {
-              const payment = doc.data();
-              totalPayments++;
-              if (payment.status === 'Pendiente') {
-                pendingPayments++;
-              }
-            });
-          }
+            const paidPayments = allPayments.filter(p => p.status === 'Pagado' && p.paidAt);
+            if (paidPayments.length > 0) {
+                // Find the most recent paidAt date
+                const mostRecentPaidAt = paidPayments.reduce((latest, p) => {
+                    const pDate = (p.paidAt as Timestamp).toDate();
+                    return pDate > latest ? pDate : latest;
+                }, new Date(0));
+                
+                // Filter payments made on that most recent date (day)
+                const lastBatchOfPayments = paidPayments.filter(p => {
+                    const pDate = (p.paidAt as Timestamp).toDate();
+                    return pDate.getFullYear() === mostRecentPaidAt.getFullYear() &&
+                           pDate.getMonth() === mostRecentPaidAt.getMonth() &&
+                           pDate.getDate() === mostRecentPaidAt.getDate();
+                });
+
+                // Sum the amount of that last batch
+                lastTotalPayment = lastBatchOfPayments.reduce((acc, p) => acc + p.amount, 0);
+            }
         }
 
 
         setStats({
-          totalPaymentForPeriod,
+          lastTotalPayment,
           totalPublishers: publishers.length,
           totalPayments,
           pendingPayments,
@@ -79,9 +78,9 @@ export default function AdminDashboardPage() {
 
       fetchStats();
     }
-  }, [firestore, publishers, leads, offers]);
+  }, [firestore, publishers, allPayments]);
 
-  const isLoading = publishersLoading || leadsLoading || offersLoading;
+  const isLoading = publishersLoading || paymentsLoading;
 
   return (
     <div className="space-y-8">
@@ -89,7 +88,7 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pago Global del Período</CardTitle>
+            <CardTitle className="text-sm font-medium">Último Pago Total Realizado</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -97,11 +96,11 @@ export default function AdminDashboardPage() {
                 <div className="text-2xl font-bold">Calculando...</div>
              ) : (
                 <div className="text-2xl font-bold">
-                ${stats.totalPaymentForPeriod.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${stats.lastTotalPayment.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
              )}
             <p className="text-xs text-muted-foreground">
-              Total a pagar basado en leads cargados.
+              Suma del último lote de pagos procesado.
             </p>
           </CardContent>
         </Card>
@@ -137,7 +136,7 @@ export default function AdminDashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.pendingPayments}</div>
             <p className="text-xs text-muted-foreground">
-              De períodos anteriores
+              Esperando procesamiento
             </p>
           </CardContent>
         </Card>
