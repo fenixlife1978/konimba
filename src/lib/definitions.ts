@@ -7,6 +7,8 @@ export type CompanyProfile = {
   address: string;
   phone: string;
   country: string;
+  usdToVesRate?: number;
+  usdToCopRate?: number;
 };
 
 export type Publisher = {

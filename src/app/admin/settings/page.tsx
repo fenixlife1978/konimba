@@ -1,16 +1,17 @@
-// This is a new file
 'use client';
 import { SettingsForm } from './components/settings-form';
 
 export default function AdminSettingsPage() {
   return (
-    <div>
-      <h1 className="text-3xl font-bold tracking-tight font-headline mb-6">
-        Configuración de la Empresa
-      </h1>
-      <p className="text-muted-foreground mb-8">
-        Gestiona la información principal de tu empresa que se mostrará en la aplicación.
-      </p>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight font-headline mb-2">
+            Configuración General
+        </h1>
+        <p className="text-muted-foreground">
+            Gestiona la información principal y las tasas de cambio de tu empresa.
+        </p>
+      </div>
       <SettingsForm />
     </div>
   );

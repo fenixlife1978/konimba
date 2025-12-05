@@ -11,7 +11,9 @@
         "logoUrl": { "type": "string", "description": "URL of the company logo." },
         "address": { "type": "string", "description": "Physical address of the company." },
         "phone": { "type": "string", "description": "Contact phone number of the company." },
-        "country": { "type": "string", "description": "Country where the company is based." }
+        "country": { "type": "string", "description": "Country where the company is based." },
+        "usdToVesRate": { "type": "number", "description": "Exchange rate from USD to Venezuelan Bolívares." },
+        "usdToCopRate": { "type": "number", "description": "Exchange rate from USD to Colombian Pesos." }
       },
       "required": ["id", "name", "logoUrl"]
     },

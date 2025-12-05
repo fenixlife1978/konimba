@@ -28,35 +28,35 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
-import type { Payment } from '@/lib/definitions';
+import type { CompanyProfile, Payment } from '@/lib/definitions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-const exchangeRateSchema = z.object({
-  rate: z.coerce.number().positive('La tasa debe ser un número positivo.'),
-});
-
-const MarkAsPaidModal = ({ payment, onConfirm }: { payment: Payment, onConfirm: (rate?: number) => void }) => {
+const MarkAsPaidModal = ({ payment, onConfirm, companyProfile }: { payment: Payment, onConfirm: (rate: number) => void, companyProfile: CompanyProfile | null }) => {
     const [open, setOpen] = useState(false);
-    const requiresRate = payment.paymentMethod === 'BOLIVARES' || payment.paymentMethod === 'PESOS COLOMBIANOS';
+    
+    const isLocalPayment = payment.paymentMethod === 'BOLIVARES' || payment.paymentMethod === 'PESOS COLOMBIANOS';
+    
+    const rateToUse = payment.paymentMethod === 'BOLIVARES' 
+        ? companyProfile?.usdToVesRate 
+        : companyProfile?.usdToCopRate;
 
-    const form = useForm<z.infer<typeof exchangeRateSchema>>({
-        resolver: zodResolver(exchangeRateSchema),
-        defaultValues: { rate: '' as any },
-    });
-
-    const onSubmit = (data: z.infer<typeof exchangeRateSchema>) => {
-        onConfirm(data.rate);
-        setOpen(false);
-        form.reset();
-    };
-
-    const handleSimpleConfirm = () => {
-        onConfirm();
+    const handleConfirm = () => {
+        if (isLocalPayment) {
+            if (rateToUse && rateToUse > 0) {
+                onConfirm(rateToUse);
+            } else {
+                toast({ variant: 'destructive', title: 'Error: Tasa no configurada', description: 'Por favor, establece una tasa de cambio en la sección de Configuración antes de procesar este pago.' });
+                return; // Prevent closing or confirming
+            }
+        } else {
+            onConfirm(0); // No rate needed for USD payments
+        }
         setOpen(false);
     }
     
@@ -72,40 +72,31 @@ const MarkAsPaidModal = ({ payment, onConfirm }: { payment: Payment, onConfirm: 
                         Estás a punto de marcar este pago como "Pagado". Esta acción no se puede deshacer.
                     </DialogDescription>
                 </DialogHeader>
-                {requiresRate ? (
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <p className="text-sm">
-                                El monto original es <strong>${payment.amount.toFixed(2)} USD</strong>. Por favor, introduce la tasa de cambio aplicada.
-                            </p>
-                            <FormField
-                                control={form.control}
-                                name="rate"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Tasa de Cambio (USD a {payment.paymentMethod === 'BOLIVARES' ? 'VES' : 'COP'})</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" step="any" placeholder="Ej. 36.50" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
+                
+                <div className="space-y-4">
+                    {isLocalPayment ? (
+                         <Alert variant={rateToUse && rateToUse > 0 ? 'default' : 'destructive'}>
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                                {rateToUse && rateToUse > 0 ? (
+                                    <>
+                                    Se aplicará la tasa de cambio de <strong>1 USD = {rateToUse} {payment.paymentMethod === 'BOLIVARES' ? 'VES' : 'COP'}</strong>. <br/>
+                                    El monto original de <strong>${payment.amount.toFixed(2)} USD</strong> se convertirá a <strong>{new Intl.NumberFormat(payment.paymentMethod === 'BOLIVARES' ? 'es-VE' : 'es-CO', { style: 'currency', currency: payment.paymentMethod === 'BOLIVARES' ? 'VES' : 'COP' }).format(payment.amount * rateToUse)}</strong>.
+                                    </>
+                                ) : (
+                                    "No se ha configurado una tasa de cambio para esta moneda. Ve a Configuración para añadirla."
                                 )}
-                            />
-                             <DialogFooter>
-                                <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                                <Button type="submit">Confirmar Pago</Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                ) : (
-                    <div className="space-y-4">
+                            </AlertDescription>
+                        </Alert>
+                    ) : (
                         <p>El monto a pagar es <strong>${payment.amount.toFixed(2)} USD</strong> a través de {payment.paymentMethod}.</p>
-                        <DialogFooter>
-                            <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                            <Button onClick={handleSimpleConfirm}>Confirmar Pago</Button>
-                        </DialogFooter>
-                    </div>
-                )}
+                    )}
+                </div>
+                
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleConfirm} disabled={isLocalPayment && (!rateToUse || rateToUse <= 0)}>Confirmar Pago</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
@@ -157,6 +148,17 @@ export const columns: ColumnDef<Payment>[] = [
       return <span className="text-muted-foreground">N/A</span>;
     },
   },
+   {
+    accessorKey: 'exchangeRate',
+    header: 'Tasa Aplicada',
+    cell: ({ row }) => {
+      const payment = row.original;
+      if (payment.status === 'Pagado' && payment.exchangeRate) {
+        return <div>{payment.exchangeRate}</div>;
+      }
+      return <span className="text-muted-foreground">N/A</span>;
+    },
+  },
   {
     accessorKey: 'paymentMethod',
     header: 'Método'
@@ -199,8 +201,11 @@ export const columns: ColumnDef<Payment>[] = [
     cell: function Cell({ row }) {
       const payment = row.original;
       const firestore = useFirestore();
+      
+      const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'company_profile', 'settings') : null, [firestore]);
+      const { data: companyProfile } = useDoc<CompanyProfile>(settingsRef);
 
-      const handleMarkAsPaid = async (rate?: number) => {
+      const handleMarkAsPaid = async (rate: number) => {
           if (!firestore) return;
           const paymentRef = doc(firestore, 'payments', payment.id);
           try {
@@ -208,7 +213,8 @@ export const columns: ColumnDef<Payment>[] = [
                   status: 'Pagado',
               };
 
-              if (rate && (payment.paymentMethod === 'BOLIVARES' || payment.paymentMethod === 'PESOS COLOMBIANOS')) {
+              const isLocalPayment = payment.paymentMethod === 'BOLIVARES' || payment.paymentMethod === 'PESOS COLOMBIANOS';
+              if (isLocalPayment && rate > 0) {
                   updateData.exchangeRate = rate;
                   updateData.finalAmount = payment.amount * rate;
                   updateData.finalCurrency = payment.paymentMethod === 'BOLIVARES' ? 'VES' : 'COP';
@@ -234,7 +240,7 @@ export const columns: ColumnDef<Payment>[] = [
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               {payment.status === 'Pendiente' && (
-                <MarkAsPaidModal payment={payment} onConfirm={handleMarkAsPaid} />
+                <MarkAsPaidModal payment={payment} onConfirm={handleMarkAsPaid} companyProfile={companyProfile}/>
               )}
               <DropdownMenuItem>Ver Detalles del Publisher</DropdownMenuItem>
             </DropdownMenuContent>
