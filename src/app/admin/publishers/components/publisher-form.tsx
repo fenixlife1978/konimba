@@ -37,9 +37,11 @@ const baseSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido.'),
   email: z.string().email('Email inválido.'),
   phone: z.string().min(1, 'El teléfono es requerido.'),
-  paymentMethod: z.enum(['PAYPAL', 'BINANCE', 'BOLIVARES', 'PESOS COLOMBIANOS']),
+  paymentMethod: z.enum(['USDT', 'Paypal', 'Bolivares', 'Pesos Colombianos']),
   status: z.enum(['Activo', 'Inactivo']),
   paymentDetails: z.string().optional(),
+  usdtExchange: z.string().optional(),
+  usdtWallet: z.string().optional(),
   country: z.enum(['Venezuela', 'Colombia']).optional(),
   bankName: z.string().optional(),
   accountNumber: z.string().optional(),
@@ -49,17 +51,34 @@ const baseSchema = z.object({
 });
 
 const publisherSchema = baseSchema.superRefine((data, ctx) => {
-  if (data.paymentMethod === 'PAYPAL' || data.paymentMethod === 'BINANCE') {
+  if (data.paymentMethod === 'Paypal') {
     if (!data.paymentDetails || data.paymentDetails.length < 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['paymentDetails'],
-        message: 'Los detalles de pago son requeridos para este método.',
+        message: 'El email de Paypal es requerido.',
       });
     }
   }
 
-  if (data.paymentMethod === 'BOLIVARES' || data.paymentMethod === 'PESOS COLOMBIANOS') {
+  if (data.paymentMethod === 'USDT') {
+    if (!data.usdtExchange) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['usdtExchange'],
+            message: 'El exchange es requerido.',
+        });
+    }
+    if (!data.usdtWallet) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['usdtWallet'],
+            message: 'La dirección de la wallet es requerida.',
+        });
+    }
+  }
+
+  if (data.paymentMethod === 'Bolivares' || data.paymentMethod === 'Pesos Colombianos') {
     if (!data.bankName) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['bankName'], message: 'El banco es requerido.' });
     }
@@ -102,7 +121,7 @@ export function PublisherForm({
         name: '',
         email: '',
         phone: '',
-        paymentMethod: 'PAYPAL' as const,
+        paymentMethod: 'Paypal' as const,
         paymentDetails: '',
         status: 'Activo' as const,
       };
@@ -116,9 +135,9 @@ export function PublisherForm({
   const country = form.watch('country');
 
   useEffect(() => {
-    if (paymentMethod === 'BOLIVARES') {
+    if (paymentMethod === 'Bolivares') {
       form.setValue('country', 'Venezuela');
-    } else if (paymentMethod === 'PESOS COLOMBIANOS') {
+    } else if (paymentMethod === 'Pesos Colombianos') {
       form.setValue('country', 'Colombia');
     }
   }, [paymentMethod, form]);
@@ -129,24 +148,23 @@ export function PublisherForm({
       if (!firestore) throw new Error('Firestore no está disponible');
       
       let finalData: Partial<PublisherFormValues> = { ...data };
+      
+      const commonData = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        paymentMethod: data.paymentMethod,
+        status: data.status,
+      }
 
       // Clear irrelevant data based on payment method
-      if (data.paymentMethod === 'PAYPAL' || data.paymentMethod === 'BINANCE') {
-        finalData = {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          paymentMethod: data.paymentMethod,
-          paymentDetails: data.paymentDetails,
-          status: data.status,
-        };
-      } else if (data.paymentMethod === 'BOLIVARES' || data.paymentMethod === 'PESOS COLOMBIANOS') {
+      if (data.paymentMethod === 'Paypal') {
+        finalData = { ...commonData, paymentDetails: data.paymentDetails };
+      } else if (data.paymentMethod === 'USDT') {
+        finalData = { ...commonData, usdtExchange: data.usdtExchange, usdtWallet: data.usdtWallet };
+      } else if (data.paymentMethod === 'Bolivares' || data.paymentMethod === 'Pesos Colombianos') {
          finalData = {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          paymentMethod: data.paymentMethod,
-          status: data.status,
+          ...commonData,
           country: data.country,
           bankName: data.bankName,
           accountNumber: data.accountNumber,
@@ -233,7 +251,7 @@ export function PublisherForm({
             />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1">
             <FormField
                 control={form.control}
                 name="paymentMethod"
@@ -251,32 +269,67 @@ export function PublisherForm({
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        <SelectItem value="PAYPAL">PAYPAL</SelectItem>
-                        <SelectItem value="BINANCE">BINANCE</SelectItem>
-                        <SelectItem value="BOLIVARES">BOLIVARES</SelectItem>
-                        <SelectItem value="PESOS COLOMBIANOS">PESOS COLOMBIANOS</SelectItem>
+                        <SelectItem value="USDT">USDT</SelectItem>
+                        <SelectItem value="Paypal">Paypal</SelectItem>
+                        <SelectItem value="Bolivares">Bolivares</SelectItem>
+                        <SelectItem value="Pesos Colombianos">Pesos Colombianos</SelectItem>
                     </SelectContent>
                     </Select>
                     <FormMessage />
                 </FormItem>
                 )}
             />
-            {(paymentMethod === 'PAYPAL' || paymentMethod === 'BINANCE') && (
-               <FormField
-                control={form.control}
-                name="paymentDetails"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Detalles de Pago</FormLabel>
-                    <FormControl>
-                        <Input placeholder="Email de PayPal o Wallet de Binance" {...field} value={field.value || ''} disabled={isLoading} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
+        </div>
+        
+        {paymentMethod === 'Paypal' && (
+            <FormField
+            control={form.control}
+            name="paymentDetails"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Email de Paypal</FormLabel>
+                <FormControl>
+                    <Input placeholder="Email de PayPal" {...field} value={field.value || ''} disabled={isLoading} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
             )}
-             {(paymentMethod === 'BOLIVARES' || paymentMethod === 'PESOS COLOMBIANOS') && (
+        />
+        )}
+        
+        {paymentMethod === 'USDT' && (
+            <div className="space-y-4 border p-4 rounded-md">
+                <FormField
+                    control={form.control}
+                    name="usdtExchange"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Exchange</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ej: Binance" {...field} value={field.value || ''} disabled={isLoading} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="usdtWallet"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Dirección de Wallet (USDT - TRC20)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="T..." {...field} value={field.value || ''} disabled={isLoading} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+        )}
+
+        {(paymentMethod === 'Bolivares' || paymentMethod === 'Pesos Colombianos') && (
+            <div className="space-y-4 border p-4 rounded-md">
                 <FormField
                     control={form.control}
                     name="country"
@@ -290,11 +343,6 @@ export function PublisherForm({
                     </FormItem>
                     )}
                 />
-            )}
-        </div>
-
-        {(paymentMethod === 'BOLIVARES' || paymentMethod === 'PESOS COLOMBIANOS') && (
-            <div className="space-y-4 border p-4 rounded-md">
                  <FormField
                     control={form.control}
                     name="bankName"

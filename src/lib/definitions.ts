@@ -16,8 +16,10 @@ export type Publisher = {
   name: string;
   email: string;
   phone: string;
-  paymentMethod: 'PAYPAL' | 'BINANCE' | 'BOLIVARES' | 'PESOS COLOMBIANOS';
-  paymentDetails: string; // For PAYPAL (email) or BINANCE (wallet)
+  paymentMethod: 'USDT' | 'Paypal' | 'Bolivares' | 'Pesos Colombianos';
+  paymentDetails?: string; // For Paypal email
+  usdtExchange?: string; // For USDT exchange platform
+  usdtWallet?: string; // For USDT wallet address
   country?: 'Venezuela' | 'Colombia';
   bankName?: string;
   accountNumber?: string;
@@ -64,7 +66,7 @@ export type Payment = {
   currency: 'USD';
   createdAt: Timestamp | Date;
   paidAt?: Timestamp | Date;
-  paymentMethod: 'PAYPAL' | 'BINANCE' | 'BOLIVARES' | 'PESOS COLOMBIANOS';
+  paymentMethod: 'USDT' | 'Paypal' | 'Bolivares' | 'Pesos Colombianos';
   receiptId?: string;
   notes?: string;
   // For UI display, not in Firestore schema directly
