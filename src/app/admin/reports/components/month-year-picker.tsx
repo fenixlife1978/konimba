@@ -15,9 +15,10 @@ import { es } from 'date-fns/locale';
 interface MonthYearPickerProps {
   date: Date;
   onDateChange: (date: Date) => void;
+  disabled?: boolean;
 }
 
-export function MonthYearPicker({ date, onDateChange }: MonthYearPickerProps) {
+export function MonthYearPicker({ date, onDateChange, disabled }: MonthYearPickerProps) {
   const currentYear = getYear(new Date());
   const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
   const months = Array.from({ length: 12 }, (_, i) => ({
@@ -40,6 +41,7 @@ export function MonthYearPicker({ date, onDateChange }: MonthYearPickerProps) {
       <Select
         value={String(getMonth(date))}
         onValueChange={handleMonthChange}
+        disabled={disabled}
       >
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Seleccionar mes" />
@@ -55,6 +57,7 @@ export function MonthYearPicker({ date, onDateChange }: MonthYearPickerProps) {
       <Select
         value={String(getYear(date))}
         onValueChange={handleYearChange}
+        disabled={disabled}
       >
         <SelectTrigger className="w-[120px]">
           <SelectValue placeholder="Seleccionar año" />

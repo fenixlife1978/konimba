@@ -7,10 +7,23 @@ import { Button } from '@/components/ui/button';
 import { PublisherReportCard } from './components/publisher-report-card';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { MonthYearPicker } from './components/month-year-picker';
+import { DateRangePicker } from '@/components/dashboard/date-range-picker';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import type { DateRange } from 'react-day-picker';
 
 export default function AdminReportsPage() {
   const firestore = useFirestore();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isCustomRange, setIsCustomRange] = useState(false);
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
 
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => {
     const now = new Date();
@@ -21,11 +34,25 @@ export default function AdminReportsPage() {
   });
 
   useEffect(() => {
-    setDateRange({
-        from: startOfMonth(currentDate),
-        to: endOfMonth(currentDate)
-    });
-  }, [currentDate]);
+    if (!isCustomRange) {
+      setDateRange({
+          from: startOfMonth(currentDate),
+          to: endOfMonth(currentDate)
+      });
+    }
+  }, [currentDate, isCustomRange]);
+
+  const handleCustomRangeApply = () => {
+      if (customDateRange?.from && customDateRange?.to) {
+          setIsCustomRange(true);
+          setDateRange({ from: customDateRange.from, to: customDateRange.to });
+      }
+  }
+  
+  const handleMonthYearChange = (date: Date) => {
+    setIsCustomRange(false);
+    setCurrentDate(date);
+  }
 
 
   const publishersRef = useMemoFirebase(
@@ -89,11 +116,28 @@ export default function AdminReportsPage() {
                 Selecciona un período para ver el desglose de ganancias por editor.
             </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
             <MonthYearPicker
                 date={currentDate}
-                onDateChange={setCurrentDate}
+                onDateChange={handleMonthYearChange}
+                disabled={isCustomRange}
             />
+            <Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="outline">Período Personalizado</Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Seleccionar un rango de fechas</DialogTitle>
+                    </DialogHeader>
+                    <DateRangePicker onDateChange={setCustomDateRange} />
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button onClick={handleCustomRangeApply}>Aplicar Rango</Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <Button onClick={() => alert('¡Funcionalidad en desarrollo!')}>
             Exportar Reporte
             </Button>
