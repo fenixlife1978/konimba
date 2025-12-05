@@ -46,12 +46,13 @@ const MarkAsPaidModal = ({ payment, onConfirm }: { payment: Payment, onConfirm: 
 
     const form = useForm<z.infer<typeof exchangeRateSchema>>({
         resolver: zodResolver(exchangeRateSchema),
-        defaultValues: { rate: undefined },
+        defaultValues: { rate: '' as any },
     });
 
     const onSubmit = (data: z.infer<typeof exchangeRateSchema>) => {
         onConfirm(data.rate);
         setOpen(false);
+        form.reset();
     };
 
     const handleSimpleConfirm = () => {
