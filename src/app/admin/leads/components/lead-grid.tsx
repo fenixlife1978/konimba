@@ -22,6 +22,7 @@ interface LeadGridProps {
 
 export type LeadGridHandle = {
   getModifiedLeads: () => Record<string, number>;
+  clearModifiedLeads: () => void;
 };
 
 export const LeadGrid = forwardRef<LeadGridHandle, LeadGridProps>(({
@@ -35,7 +36,9 @@ export const LeadGrid = forwardRef<LeadGridHandle, LeadGridProps>(({
   const leadsForDate = useMemo(() => {
     const targetDateString = date.toISOString().split('T')[0];
     return leads?.filter(lead => {
+        // Handle both Firestore Timestamp and JS Date objects
         const leadDate = lead.date instanceof Date ? lead.date : (lead.date as any)?.toDate?.();
+        if (!leadDate) return false;
         return leadDate?.toISOString().split('T')[0] === targetDateString;
     }) || [];
   }, [leads, date]);
@@ -53,9 +56,10 @@ export const LeadGrid = forwardRef<LeadGridHandle, LeadGridProps>(({
     
   useImperativeHandle(ref, () => ({
     getModifiedLeads: () => {
-      const leadsToReturn = { ...modifiedLeads };
-      setModifiedLeads({}); // Clear after getting them
-      return leadsToReturn;
+      return modifiedLeads;
+    },
+    clearModifiedLeads: () => {
+        setModifiedLeads({});
     }
   }));
 

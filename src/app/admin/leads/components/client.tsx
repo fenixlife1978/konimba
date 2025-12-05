@@ -1,5 +1,5 @@
 'use client';
-import { Plus, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Lead, Publisher, GlobalOffer } from '@/lib/definitions';
 import {
@@ -27,7 +27,8 @@ import { toast } from '@/hooks/use-toast';
 import { PeriodSelector } from './period-selector';
 import type { DateRange } from 'react-day-picker';
 import { LeadGrid } from './lead-grid';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import type { LeadGridHandle } from './lead-grid';
 
 interface LeadClientProps {
   data: Lead[];
@@ -47,7 +48,7 @@ export const LeadClient: React.FC<LeadClientProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   
   // Ref to hold the imperative handle of the LeadGrid component
-  const leadGridRef = useRef<{ getModifiedLeads: () => Record<string, number> }>(null);
+  const leadGridRef = useRef<LeadGridHandle>(null);
 
 
   // Filter offers to only include active ones for the grid columns
@@ -206,7 +207,8 @@ export const LeadClient: React.FC<LeadClientProps> = ({
 
       await batch.commit();
       toast({ title: '¡Éxito!', description: 'Los cambios en los leads han sido guardados.'});
-      leadGridRef.current?.getModifiedLeads && Object.keys(modifiedLeads).forEach(key => delete modifiedLeads[key]); // Clear modified leads
+      // Imperatively clear the modified leads in the child component
+      leadGridRef.current?.clearModifiedLeads();
     } catch (error) {
       console.error('Error saving leads:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron guardar los cambios.' });
