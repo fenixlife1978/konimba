@@ -50,8 +50,8 @@ const ReportHeader = () => {
     
     return (
         <div className="flex items-center justify-between p-4 bg-muted/20 border-b">
-            <div className="h-12 w-32 relative">
-                <KonimPayLogo />
+            <div className="h-12 w-12 relative text-primary">
+                <KonimPayLogo className="w-full h-full" />
             </div>
             {companyProfile && (
                 <div className="text-right text-xs text-muted-foreground">

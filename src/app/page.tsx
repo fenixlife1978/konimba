@@ -20,7 +20,7 @@ function WelcomeContent() {
   }, [user, isUserLoading]);
 
 
-  if (isUserLoading || user) {
+  if (isUserLoading) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center">
             <h1 className="text-xl font-semibold">Cargando...</h1>
@@ -28,13 +28,32 @@ function WelcomeContent() {
     );
   }
 
+  if (user) {
+    return (
+       <div className="flex min-h-screen flex-col items-center justify-center bg-background text-center p-4">
+        <div className="mb-12 h-24 w-24 text-primary">
+          <KonimPayLogo className="h-full w-full" />
+        </div>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4 font-headline">
+            BIENVENID@ A KONIMPAY
+        </h1>
+        <p className="max-w-xl text-lg text-muted-foreground mb-12">
+            Ya has iniciado sesión. Serás redirigido en un momento.
+        </p>
+         <Button asChild size="lg" className="font-bold text-base">
+            <Link href={user.email === 'faubriciosanchez1@gmail.com' ? '/admin/dashboard' : '/dashboard'}>Ir al Panel</Link>
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background text-center p-4">
-      <div className="mb-12 h-16 w-48 text-primary">
+      <div className="mb-12 h-24 w-24 text-primary">
         <KonimPayLogo className="h-full w-full" />
       </div>
       <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4 font-headline">
-        BIENVENID@ A KONIMBA
+        BIENVENID@ A KONIMPAY
       </h1>
       <p className="max-w-xl text-lg text-muted-foreground mb-12">
         INGRESA Y GESTIONA TUS GANANCIAS DESDE TU CUENTA
