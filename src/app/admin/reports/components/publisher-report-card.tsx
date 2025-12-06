@@ -18,13 +18,17 @@ import {
   TableFooter as UiTableFooter,
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { format, eachDayOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { KonimPayLogo } from '@/components/icons';
+import { Button } from '@/components/ui/button';
+import { Share2 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface PublisherReportCardProps {
   publisher: Publisher;
@@ -67,6 +71,24 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
   dateRange,
 }) => {
   const initials = publisher.name?.split(' ').map((n) => n[0]).join('') || 'N/A';
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = () => {
+    if (!reportRef.current) return;
+
+    html2canvas(reportRef.current, { scale: 2 }).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      const from = format(dateRange.from, 'dd-MM-yy');
+      const to = format(dateRange.to, 'dd-MM-yy');
+      pdf.save(`Reporte-KonimPay-${publisher.name}-${from}_${to}.pdf`);
+    });
+  };
 
   const daysInPeriod = useMemo(() => {
     if (!dateRange.from || !dateRange.to) return [];
@@ -121,17 +143,23 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
   
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden" ref={reportRef}>
       <ReportHeader />
-      <CardHeader className="flex flex-row items-center gap-4 bg-muted/30">
-        <Avatar className="h-12 w-12">
-          <AvatarImage src={publisher.avatarUrl} alt={publisher.name} />
-          <AvatarFallback>{initials}</AvatarFallback>
-        </Avatar>
-        <div>
-          <CardTitle className="text-xl">{publisher.name}</CardTitle>
-          <CardDescription>{publisher.email}</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between gap-4 bg-muted/30">
+        <div className='flex items-center gap-4'>
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={publisher.avatarUrl} alt={publisher.name} />
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+            <div>
+              <CardTitle className="text-xl">{publisher.name}</CardTitle>
+              <CardDescription>{publisher.email}</CardDescription>
+            </div>
         </div>
+        <Button onClick={handleExport} variant="outline" size="icon">
+          <Share2 className="h-4 w-4" />
+          <span className="sr-only">Exportar a PDF</span>
+        </Button>
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="w-full whitespace-nowrap">
