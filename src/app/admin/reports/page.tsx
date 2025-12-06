@@ -1,23 +1,30 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import type { Publisher, GlobalOffer, Lead } from '@/lib/definitions';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import type { Publisher, GlobalOffer, Lead, CompanyProfile } from '@/lib/definitions';
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { PublisherReportCard } from './components/publisher-report-card';
-import { startOfMonth, endOfMonth, isValid, format } from 'date-fns';
+import { startOfMonth, endOfMonth, isValid, format, eachDayOfInterval } from 'date-fns';
 import { DatePartSelector } from './components/date-part-selector';
 import { toast } from '@/hooks/use-toast';
 import { ReportHeader } from './components/report-header';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import 'jspdf-autotable';
 import { Share2 } from 'lucide-react';
+
+// Extend jsPDF with autoTable
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDF;
+}
 
 export default function AdminReportsPage() {
   const firestore = useFirestore();
   const [isExporting, setIsExporting] = useState(false);
   const reportsContainerRef = useRef<HTMLDivElement>(null);
-
+  
+  const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'company_profile', 'settings') : null, [firestore]);
+  const { data: companyProfile } = useDoc<CompanyProfile>(settingsRef);
 
   // State for the main date range used by the query
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null);
@@ -37,32 +44,121 @@ export default function AdminReportsPage() {
   }, []);
 
   const handleExport = () => {
-    if (!reportsContainerRef.current) return;
-    setIsExporting(true);
+      if (!dateRange || !publishersWithLeads || !offers || !companyProfile) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Datos insuficientes para generar el reporte.' });
+          return;
+      }
+      setIsExporting(true);
 
-    html2canvas(reportsContainerRef.current, { scale: 2, backgroundColor: null }).then((canvas) => {
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'px',
-        format: [canvas.width, canvas.height],
-        hotfixes: ['px_scaling']
+      const doc = new jsPDF({ orientation: 'landscape' }) as jsPDFWithAutoTable;
+
+      const addHeader = () => {
+          if (companyProfile.logoUrl) {
+            try {
+              // Ensure the logo is a data URL
+              if(companyProfile.logoUrl.startsWith('data:image')){
+                 doc.addImage(companyProfile.logoUrl, 'PNG', 15, 10, 30, 15, undefined, 'FAST');
+              }
+            } catch(e) {
+                console.error("Could not add image to PDF", e);
+            }
+          }
+          doc.setFontSize(18);
+          doc.text(companyProfile.name, doc.internal.pageSize.getWidth() - 15, 15, { align: 'right' });
+          doc.setFontSize(9);
+          doc.setTextColor(100);
+          doc.text(companyProfile.address, doc.internal.pageSize.getWidth() - 15, 20, { align: 'right' });
+          doc.text(`Tel: ${companyProfile.phone} - ${companyProfile.country}`, doc.internal.pageSize.getWidth() - 15, 24, { align: 'right' });
+      };
+
+      const addTitle = () => {
+        doc.setFontSize(14);
+        doc.text('Reporte de Pago Detallado', 15, 40);
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        const period = `Período: ${format(dateRange.from, 'dd/MM/yyyy')} - ${format(dateRange.to, 'dd/MM/yyyy')}`;
+        doc.text(period, 15, 45);
+      }
+
+      let yPos = 55;
+
+      const daysInPeriod = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
+      const dayHeaders = daysInPeriod.map(day => format(day, 'dd'));
+
+      publishersWithLeads.forEach(publisher => {
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${publisher.name}`, 15, yPos);
+          yPos += 2;
+
+          const offerMap = new Map(offers.map(o => [o.id, o]));
+          const leadsByOfferAndDate: { [key: string]: { [key: string]: number } } = {};
+          
+          publisher.leads.forEach(lead => {
+              if (lead.count > 0 && offerMap.has(lead.offerId)) {
+                  const dateStr = format((lead.date as any).toDate(), 'yyyy-MM-dd');
+                  if (!leadsByOfferAndDate[lead.offerId]) leadsByOfferAndDate[lead.offerId] = {};
+                  leadsByOfferAndDate[lead.offerId][dateStr] = lead.count;
+              }
+          });
+
+          const body = Object.keys(leadsByOfferAndDate).map(offerId => {
+              const offer = offerMap.get(offerId)!;
+              const dailyLeads = leadsByOfferAndDate[offerId] || {};
+              const totalOfferLeads = Object.values(dailyLeads).reduce((sum, count) => sum + count, 0);
+              const subtotal = totalOfferLeads * offer.payout;
+
+              const rowData = [
+                  offer.name,
+                  `$${offer.payout.toFixed(2)}`,
+                  ...daysInPeriod.map(day => {
+                      const dateStr = format(day, 'yyyy-MM-dd');
+                      return dailyLeads[dateStr] || '-';
+                  }),
+                  totalOfferLeads,
+                  `$${subtotal.toFixed(2)}`
+              ];
+              return rowData;
+          });
+
+          const totalPublisherLeads = publisher.leads.reduce((sum, l) => sum + l.count, 0);
+          const totalPublisherAmount = body.reduce((sum, row) => sum + parseFloat((row.at(-1) as string).replace('$', '')), 0);
+          
+          doc.autoTable({
+              startY: yPos,
+              head: [['Oferta', 'Valor', ...dayHeaders, 'Total Leads', 'Sub Total']],
+              body: body,
+              foot: [['Total a Pagar', '', ...Array(daysInPeriod.length).fill(''), totalPublisherLeads, `$${totalPublisherAmount.toFixed(2)}`]],
+              theme: 'striped',
+              headStyles: { fillColor: [0, 112, 74], fontSize: 7, halign: 'center' },
+              footStyles: { fillColor: [230, 230, 230], textColor: 0, fontStyle: 'bold' },
+              bodyStyles: { fontSize: 8 },
+              columnStyles: {
+                  0: { cellWidth: 40 }, // Offer Name
+                  1: { halign: 'right' }, // Payout
+                  [dayHeaders.length + 2]: { halign: 'right', fontStyle: 'bold' }, // Total Leads
+                  [dayHeaders.length + 3]: { halign: 'right', fontStyle: 'bold' }, // Sub Total
+              },
+              didDrawPage: (data) => {
+                  addHeader();
+              },
+              margin: { top: 30 }
+          });
+          
+          yPos = (doc as any).autoTable.previous.finalY + 15;
+
+          if(yPos > doc.internal.pageSize.getHeight() - 30) {
+            doc.addPage();
+            yPos = 55;
+          }
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      const from = format(dateRange!.from, 'dd-MM-yy');
-      const to = format(dateRange!.to, 'dd-MM-yy');
-      pdf.save(`Reporte-KonimPay-General-${from}_${to}.pdf`);
+
+      const from = format(dateRange.from, 'dd-MM-yy');
+      const to = format(dateRange.to, 'dd-MM-yy');
+      doc.save(`Reporte-KonimPay-General-${from}_${to}.pdf`);
       setIsExporting(false);
-    }).catch(err => {
-      console.error("Error exporting to PDF:", err);
-      toast({
-        variant: "destructive",
-        title: "Error al Exportar",
-        description: "No se pudo generar el archivo PDF."
-      });
-      setIsExporting(false);
-    });
   };
+
 
   const handleApplyRange = () => {
     if (!startDate || !endDate || !isValid(startDate) || !isValid(endDate)) {
