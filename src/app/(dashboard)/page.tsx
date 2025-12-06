@@ -1,29 +1,26 @@
 'use client';
+import { useUser } from '@/firebase';
 import { redirect } from 'next/navigation';
 import { useEffect } from 'react';
-import { useUser } from '@/firebase';
 
-export default function DashboardRootPage() {
+// This page only exists to satisfy the Next.js router.
+// The redirection logic is handled by the useEffect hook below,
+// which will send the user to the correct dashboard page.
+export default function DashboardRootRedirect() {
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (isUserLoading) {
-      // Wait until user status is resolved
-      return;
-    }
-
-    if (user) {
-      if (user.email === 'faubriciosanchez1@gmail.com') {
-        redirect('/admin/dashboard');
+    if (!isUserLoading) {
+      if (user) {
+        // Once we know the user is loaded, redirect to the actual dashboard page.
+        redirect('/dashboard/dashboard');
       } else {
-        redirect('/dashboard');
+        // If for some reason the user is not authenticated, send them to login.
+        redirect('/login');
       }
-    } else {
-      // If no user, redirect to login
-      redirect('/login');
     }
   }, [user, isUserLoading]);
 
-  // Render a loading state while checking auth
+  // Display a loading message while the redirect is being prepared.
   return <div>Cargando...</div>;
 }
