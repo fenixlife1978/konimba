@@ -1,5 +1,5 @@
 'use client';
-import { SVGProps, useEffect, useState } from "react";
+import { SVGProps } from "react";
 import Image from "next/image";
 import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import type { CompanyProfile } from "@/lib/definitions";
@@ -9,8 +9,8 @@ export function KonimPayLogo(props: SVGProps<SVGSVGElement> & { className?: stri
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   
-  // Only create the ref if the user is authenticated
   const settingsRef = useMemoFirebase(() => {
+    // Only attempt to fetch if a user is loaded.
     if (firestore && user) {
       return doc(firestore, 'company_profile', 'settings');
     }
@@ -18,20 +18,10 @@ export function KonimPayLogo(props: SVGProps<SVGSVGElement> & { className?: stri
   }, [firestore, user]);
 
   const { data: companyProfile, isLoading: isProfileLoading } = useDoc<CompanyProfile>(settingsRef);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  
+  // Use the logo if the user is authenticated, the profile has loaded, and the URL exists.
+  const logoUrl = user && !isUserLoading && !isProfileLoading ? companyProfile?.logoUrl : null;
 
-  useEffect(() => {
-    // We only set the logo URL if a user is loaded and the company profile has a logoUrl.
-    if (user && !isProfileLoading && companyProfile?.logoUrl) {
-      setLogoUrl(companyProfile.logoUrl);
-    }
-    // If there's no user, we ensure we don't show a custom logo.
-    if (!user && !isUserLoading) {
-      setLogoUrl(null);
-    }
-  }, [companyProfile, user, isUserLoading, isProfileLoading]);
-
-  // If a custom logo URL is available from settings, render it as an Image.
   if (logoUrl) {
     return (
       <div className={props.className} style={{ position: 'relative' }}>
@@ -46,7 +36,7 @@ export function KonimPayLogo(props: SVGProps<SVGSVGElement> & { className?: stri
     );
   }
 
-  // Fallback to the default SVG logo if no custom URL is set.
+  // Fallback to the default SVG logo if no user, or no custom URL is set.
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
