@@ -85,7 +85,18 @@ export default function AdminReportsPage() {
       const daysInPeriod = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
       const dayHeaders = daysInPeriod.map(day => format(day, 'dd'));
 
-      publishersWithLeads.forEach(publisher => {
+      publishersWithLeads.forEach((publisher, index) => {
+          
+          if (index > 0) { // Add space between publisher sections
+            yPos = (doc as any).autoTable.previous.finalY + 15;
+          }
+
+          if(yPos > doc.internal.pageSize.getHeight() - 40) {
+            doc.addPage();
+            yPos = 30; // Reset Y position for new page
+            addHeader();
+          }
+          
           doc.setFontSize(12);
           doc.setFont('helvetica', 'bold');
           doc.text(`${publisher.name}`, 15, yPos);
@@ -124,11 +135,17 @@ export default function AdminReportsPage() {
           const totalPublisherLeads = publisher.leads.reduce((sum, l) => sum + l.count, 0);
           const totalPublisherAmount = body.reduce((sum, row) => sum + parseFloat((row.at(-1) as string).replace('$', '')), 0);
           
+          const footerContent = [
+            { content: 'Total a Pagar', colSpan: daysInPeriod.length + 2, styles: { halign: 'right', fontStyle: 'bold' } },
+            { content: totalPublisherLeads, styles: { halign: 'center', fontStyle: 'bold' } },
+            { content: `$${totalPublisherAmount.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold' } },
+          ];
+
           doc.autoTable({
               startY: yPos,
               head: [['Oferta', 'Valor', ...dayHeaders, 'Total Leads', 'Sub Total']],
               body: body,
-              foot: [['Total a Pagar', '', ...Array(daysInPeriod.length).fill(''), totalPublisherLeads, `$${totalPublisherAmount.toFixed(2)}`]],
+              foot: [footerContent],
               theme: 'striped',
               headStyles: { fillColor: [0, 112, 74], fontSize: 7, halign: 'center' },
               footStyles: { fillColor: [230, 230, 230], textColor: 0, fontStyle: 'bold' },
@@ -136,21 +153,20 @@ export default function AdminReportsPage() {
               columnStyles: {
                   0: { cellWidth: 40 }, // Offer Name
                   1: { halign: 'right' }, // Payout
-                  [dayHeaders.length + 2]: { halign: 'right', fontStyle: 'bold' }, // Total Leads
+                  [dayHeaders.length + 2]: { halign: 'center', fontStyle: 'bold' }, // Total Leads
                   [dayHeaders.length + 3]: { halign: 'right', fontStyle: 'bold' }, // Sub Total
               },
               didDrawPage: (data) => {
-                  addHeader();
+                  if(data.pageNumber === 1) {
+                    addHeader();
+                    addTitle();
+                  } else {
+                    addHeader();
+                  }
               },
-              margin: { top: 30 }
+              margin: { top: 50 }
           });
           
-          yPos = (doc as any).autoTable.previous.finalY + 15;
-
-          if(yPos > doc.internal.pageSize.getHeight() - 30) {
-            doc.addPage();
-            yPos = 55;
-          }
       });
 
       const from = format(dateRange.from, 'dd-MM-yy');

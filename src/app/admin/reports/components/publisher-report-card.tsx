@@ -20,6 +20,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useMemo } from 'react';
 import { format, eachDayOfInterval } from 'date-fns';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ReportHeader } from './report-header';
+import { Button } from '@/components/ui/button';
+import { Share2 } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 interface PublisherReportCardProps {
   publisher: Publisher;
@@ -155,7 +159,7 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
             </TableBody>
              <UiTableFooter>
                 <TableRow>
-                    <TableCell colSpan={daysInPeriod.length + 3} className="text-right font-bold text-lg">Total a Pagar</TableCell>
+                    <TableCell colSpan={daysInPeriod.length + 2} className="text-right font-bold text-lg">Total a Pagar</TableCell>
                     <TableCell className="text-right font-bold text-lg">{totalLeads}</TableCell>
                     <TableCell className="text-right font-bold text-lg pr-4">
                         {totalAmount.toLocaleString('es-US', { style: 'currency', currency: 'USD' })}
