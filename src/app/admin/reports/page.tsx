@@ -1,16 +1,23 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import type { Publisher, GlobalOffer, Lead } from '@/lib/definitions';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { PublisherReportCard } from './components/publisher-report-card';
-import { startOfMonth, endOfMonth, isValid } from 'date-fns';
+import { startOfMonth, endOfMonth, isValid, format } from 'date-fns';
 import { DatePartSelector } from './components/date-part-selector';
 import { toast } from '@/hooks/use-toast';
+import { ReportHeader } from './components/report-header';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { Share2 } from 'lucide-react';
 
 export default function AdminReportsPage() {
   const firestore = useFirestore();
+  const [isExporting, setIsExporting] = useState(false);
+  const reportsContainerRef = useRef<HTMLDivElement>(null);
+
 
   // State for the main date range used by the query
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null);
@@ -28,6 +35,34 @@ export default function AdminReportsPage() {
     setEndDate(to);
     setDateRange({ from, to });
   }, []);
+
+  const handleExport = () => {
+    if (!reportsContainerRef.current) return;
+    setIsExporting(true);
+
+    html2canvas(reportsContainerRef.current, { scale: 2, backgroundColor: null }).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [canvas.width, canvas.height],
+        hotfixes: ['px_scaling']
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      const from = format(dateRange!.from, 'dd-MM-yy');
+      const to = format(dateRange!.to, 'dd-MM-yy');
+      pdf.save(`Reporte-KonimPay-General-${from}_${to}.pdf`);
+      setIsExporting(false);
+    }).catch(err => {
+      console.error("Error exporting to PDF:", err);
+      toast({
+        variant: "destructive",
+        title: "Error al Exportar",
+        description: "No se pudo generar el archivo PDF."
+      });
+      setIsExporting(false);
+    });
+  };
 
   const handleApplyRange = () => {
     if (!startDate || !endDate || !isValid(startDate) || !isValid(endDate)) {
@@ -135,14 +170,25 @@ export default function AdminReportsPage() {
                     )}
                 </div>
             </div>
-             <Button onClick={handleApplyRange} className="mt-2">Aplicar Período</Button>
+             <Button onClick={handleApplyRange} className="mt-2 w-full">Aplicar Período</Button>
         </div>
       </div>
+      
+      {publishersWithLeads.length > 0 && offers && dateRange && (
+        <div className="flex justify-end mb-4">
+            <Button onClick={handleExport} disabled={isExporting}>
+                <Share2 className="mr-2 h-4 w-4" />
+                {isExporting ? 'Exportando...' : 'Exportar a PDF'}
+            </Button>
+        </div>
+      )}
+
 
       {isLoading ? (
-        <div className="text-center text-muted-foreground">Cargando reportes...</div>
+        <div className="text-center text-muted-foreground py-10">Cargando reportes...</div>
       ) : publishersWithLeads.length > 0 && offers && dateRange ? (
-         <div className="space-y-6">
+         <div ref={reportsContainerRef} className="space-y-6 bg-background p-4 rounded-lg">
+            <ReportHeader />
             {publishersWithLeads.map(publisher => (
                 <PublisherReportCard 
                     key={publisher.id}
