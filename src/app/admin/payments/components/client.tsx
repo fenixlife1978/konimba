@@ -29,10 +29,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from '@/hooks/use-toast';
-import { Cog } from 'lucide-react';
+import { Cog, Share2 } from 'lucide-react';
 
 interface PaymentClientProps {
   data: Payment[];
+  onExport: () => void;
+  isExporting: boolean;
 }
 
 const ratesSchema = z.object({
@@ -147,7 +149,7 @@ const ManageRatesModal = ({ onRatesUpdate }: { onRatesUpdate: (rates: RatesFormV
     )
 }
 
-export const PaymentClient: React.FC<PaymentClientProps> = ({ data }) => {
+export const PaymentClient: React.FC<PaymentClientProps> = ({ data, onExport, isExporting }) => {
   const [liveRates, setLiveRates] = useState<RatesFormValues>({});
 
   return (
@@ -158,6 +160,10 @@ export const PaymentClient: React.FC<PaymentClientProps> = ({ data }) => {
         </p>
         <div className="flex items-center gap-2">
             <ManageRatesModal onRatesUpdate={setLiveRates} />
+            <Button variant="outline" onClick={onExport} disabled={isExporting}>
+              <Share2 className="mr-2 h-4 w-4" />
+              {isExporting ? 'Exportando...' : 'Exportar a PDF'}
+            </Button>
         </div>
       </div>
       <DataTable columns={columns({ liveRates })} data={data} />
