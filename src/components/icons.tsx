@@ -9,22 +9,24 @@ import { cn } from "@/lib/utils";
 export function KonimPayLogo(props: SVGProps<SVGSVGElement> & { className?: string }) {
   const { className, ...rest } = props;
   const firestore = useFirestore();
-  const { isUserLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   
   const settingsRef = useMemoFirebase(() => {
-    if (firestore) {
+    // Only create the reference if firestore is available and user loading is complete
+    if (firestore && !isUserLoading && user) {
       return doc(firestore, 'company_profile', 'settings');
     }
     return null;
-  }, [firestore]);
+  }, [firestore, isUserLoading, user]);
 
   const { data: companyProfile, isLoading: isProfileLoading } = useDoc<CompanyProfile>(settingsRef);
   
-  const logoUrl = !isUserLoading && !isProfileLoading ? companyProfile?.logoUrl : null;
+  const isLoading = isUserLoading || isProfileLoading;
+  const logoUrl = !isLoading && companyProfile ? companyProfile.logoUrl : null;
 
   if (logoUrl) {
     return (
-      <div className={cn("relative rounded-full overflow-hidden", className)}>
+      <div className={cn("relative overflow-hidden", className)}>
          <Image
           src={logoUrl}
           alt={companyProfile?.name || "Company Logo"}
@@ -38,7 +40,7 @@ export function KonimPayLogo(props: SVGProps<SVGSVGElement> & { className?: stri
 
   // Fallback to the default SVG logo
   return (
-    <div className={cn("relative rounded-full overflow-hidden flex items-center justify-center bg-background", className)}>
+    <div className={cn("relative overflow-hidden flex items-center justify-center bg-transparent", className)}>
         <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 160 30"
