@@ -51,11 +51,13 @@ export default function AdminReportsPage() {
       setIsExporting(true);
 
       const doc = new jsPDF({ orientation: 'landscape' }) as jsPDFWithAutoTable;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPos = 55; // Initial Y position after header
 
-      const addHeader = () => {
+      const addHeaderAndTitle = () => {
+          // Header
           if (companyProfile.logoUrl) {
             try {
-              // Ensure the logo is a data URL
               if(companyProfile.logoUrl.startsWith('data:image')){
                  doc.addImage(companyProfile.logoUrl, 'PNG', 15, 10, 30, 15, undefined, 'FAST');
               }
@@ -69,39 +71,23 @@ export default function AdminReportsPage() {
           doc.setTextColor(100);
           doc.text(companyProfile.address, doc.internal.pageSize.getWidth() - 15, 20, { align: 'right' });
           doc.text(`Tel: ${companyProfile.phone} - ${companyProfile.country}`, doc.internal.pageSize.getWidth() - 15, 24, { align: 'right' });
+
+          // Title
+          doc.setFontSize(14);
+          doc.text('Reporte de Pago Detallado', 15, 40);
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          const period = `Período: ${format(dateRange.from, 'dd/MM/yyyy')} - ${format(dateRange.to, 'dd/MM/yyyy')}`;
+          doc.text(period, 15, 45);
       };
-
-      const addTitle = () => {
-        doc.setFontSize(14);
-        doc.text('Reporte de Pago Detallado', 15, 40);
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        const period = `Período: ${format(dateRange.from, 'dd/MM/yyyy')} - ${format(dateRange.to, 'dd/MM/yyyy')}`;
-        doc.text(period, 15, 45);
-      }
-
-      let yPos = 55;
 
       const daysInPeriod = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
       const dayHeaders = daysInPeriod.map(day => format(day, 'dd'));
+      const tableHead = [['Oferta', 'Valor', ...dayHeaders, 'Total Leads', 'Sub Total']];
+
 
       publishersWithLeads.forEach((publisher, index) => {
           
-          if (index > 0) { // Add space between publisher sections
-            yPos = (doc as any).autoTable.previous.finalY + 15;
-          }
-
-          if(yPos > doc.internal.pageSize.getHeight() - 40) {
-            doc.addPage();
-            yPos = 30; // Reset Y position for new page
-            addHeader();
-          }
-          
-          doc.setFontSize(12);
-          doc.setFont('helvetica', 'bold');
-          doc.text(`${publisher.name}`, 15, yPos);
-          yPos += 2;
-
           const offerMap = new Map(offers.map(o => [o.id, o]));
           const leadsByOfferAndDate: { [key: string]: { [key: string]: number } } = {};
           
@@ -113,13 +99,13 @@ export default function AdminReportsPage() {
               }
           });
 
-          const body = Object.keys(leadsByOfferAndDate).map(offerId => {
+          const tableBody = Object.keys(leadsByOfferAndDate).map(offerId => {
               const offer = offerMap.get(offerId)!;
               const dailyLeads = leadsByOfferAndDate[offerId] || {};
               const totalOfferLeads = Object.values(dailyLeads).reduce((sum, count) => sum + count, 0);
               const subtotal = totalOfferLeads * offer.payout;
 
-              const rowData = [
+              return [
                   offer.name,
                   `$${offer.payout.toFixed(2)}`,
                   ...daysInPeriod.map(day => {
@@ -129,23 +115,40 @@ export default function AdminReportsPage() {
                   totalOfferLeads,
                   `$${subtotal.toFixed(2)}`
               ];
-              return rowData;
           });
 
           const totalPublisherLeads = publisher.leads.reduce((sum, l) => sum + l.count, 0);
-          const totalPublisherAmount = body.reduce((sum, row) => sum + parseFloat((row.at(-1) as string).replace('$', '')), 0);
+          const totalPublisherAmount = tableBody.reduce((sum, row) => sum + parseFloat((row.at(-1) as string).replace('$', '')), 0);
           
-          const footerContent = [
-            { content: 'Total a Pagar', colSpan: daysInPeriod.length + 2, styles: { halign: 'right', fontStyle: 'bold' } },
+          const tableFoot = [[
+            { content: 'Total a Pagar', colSpan: dayHeaders.length + 2, styles: { halign: 'right', fontStyle: 'bold' } },
             { content: totalPublisherLeads, styles: { halign: 'center', fontStyle: 'bold' } },
             { content: `$${totalPublisherAmount.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold' } },
-          ];
+          ]];
+          
+          // Calculate space needed for this table to check if it fits on the current page
+          const tableProps = { head: tableHead, body: tableBody, foot: tableFoot };
+          const tableHeight = (doc as any).autoTable.calculateHeight(tableProps) + 20; // + publisher name height and margin
+
+          if (yPos + tableHeight > pageHeight) {
+              doc.addPage();
+              yPos = 30; // Reset Y for new page
+          }
+
+          if (index > 0) {
+            yPos += 10;
+          }
+
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${publisher.name}`, 15, yPos);
+          yPos += 5;
 
           doc.autoTable({
               startY: yPos,
-              head: [['Oferta', 'Valor', ...dayHeaders, 'Total Leads', 'Sub Total']],
-              body: body,
-              foot: [footerContent],
+              head: tableHead,
+              body: tableBody,
+              foot: tableFoot,
               theme: 'striped',
               headStyles: { fillColor: [0, 112, 74], fontSize: 7, halign: 'center' },
               footStyles: { fillColor: [230, 230, 230], textColor: 0, fontStyle: 'bold' },
@@ -157,16 +160,14 @@ export default function AdminReportsPage() {
                   [dayHeaders.length + 3]: { halign: 'right', fontStyle: 'bold' }, // Sub Total
               },
               didDrawPage: (data) => {
-                  if(data.pageNumber === 1) {
-                    addHeader();
-                    addTitle();
-                  } else {
-                    addHeader();
+                  if (data.pageNumber === 1) {
+                    addHeaderAndTitle();
                   }
               },
-              margin: { top: 50 }
+              margin: { top: (index === 0) ? 50 : 30 }
           });
           
+          yPos = (doc as any).autoTable.previous.finalY;
       });
 
       const from = format(dateRange.from, 'dd-MM-yy');
