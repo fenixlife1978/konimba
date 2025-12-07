@@ -51,9 +51,7 @@ export default function AdminReportsPage() {
       setIsExporting(true);
 
       const doc = new jsPDF({ orientation: 'landscape' }) as jsPDFWithAutoTable;
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let yPos = 55; // Initial Y position after header
-
+      
       const addHeaderAndTitle = () => {
           // Header
           if (companyProfile.logoUrl) {
@@ -85,9 +83,10 @@ export default function AdminReportsPage() {
       const dayHeaders = daysInPeriod.map(day => format(day, 'dd'));
       const tableHead = [['Oferta', 'Valor', ...dayHeaders, 'Total Leads', 'Sub Total']];
 
+      let isFirstTable = true;
+      let finalY = 55;
 
-      publishersWithLeads.forEach((publisher, index) => {
-          
+      publishersWithLeads.forEach((publisher) => {
           const offerMap = new Map(offers.map(o => [o.id, o]));
           const leadsByOfferAndDate: { [key: string]: { [key: string]: number } } = {};
           
@@ -115,7 +114,9 @@ export default function AdminReportsPage() {
                   totalOfferLeads,
                   `$${subtotal.toFixed(2)}`
               ];
-          });
+          }).sort((a, b) => (a[0] as string).localeCompare(b[0] as string));
+
+          if (tableBody.length === 0) return;
 
           const totalPublisherLeads = publisher.leads.reduce((sum, l) => sum + l.count, 0);
           const totalPublisherAmount = tableBody.reduce((sum, row) => sum + parseFloat((row.at(-1) as string).replace('$', '')), 0);
@@ -126,26 +127,15 @@ export default function AdminReportsPage() {
             { content: `$${totalPublisherAmount.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold' } },
           ]];
           
-          // Calculate space needed for this table to check if it fits on the current page
-          const tableProps = { head: tableHead, body: tableBody, foot: tableFoot };
-          const tableHeight = (doc as any).autoTable.calculateHeight(tableProps) + 20; // + publisher name height and margin
-
-          if (yPos + tableHeight > pageHeight) {
-              doc.addPage();
-              yPos = 30; // Reset Y for new page
-          }
-
-          if (index > 0) {
-            yPos += 10;
-          }
+          const startY = isFirstTable ? 55 : (finalY || 0) + 15;
+          isFirstTable = false;
 
           doc.setFontSize(12);
           doc.setFont('helvetica', 'bold');
-          doc.text(`${publisher.name}`, 15, yPos);
-          yPos += 5;
-
+          doc.text(`${publisher.name}`, 15, startY - 5);
+          
           doc.autoTable({
-              startY: yPos,
+              startY: startY,
               head: tableHead,
               body: tableBody,
               foot: tableFoot,
@@ -164,10 +154,9 @@ export default function AdminReportsPage() {
                     addHeaderAndTitle();
                   }
               },
-              margin: { top: (index === 0) ? 50 : 30 }
+              margin: { top: 50 }
           });
-          
-          yPos = (doc as any).autoTable.previous.finalY;
+          finalY = (doc as any).autoTable.previous.finalY;
       });
 
       const from = format(dateRange.from, 'dd-MM-yy');
