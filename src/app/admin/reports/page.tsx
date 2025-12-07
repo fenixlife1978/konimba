@@ -51,42 +51,41 @@ export default function AdminReportsPage() {
       setIsExporting(true);
 
       const doc = new jsPDF({ orientation: 'landscape' }) as jsPDFWithAutoTable;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPos = 55; // Initial Y position
       
-      const addHeaderAndTitle = () => {
-          // Header
-          if (companyProfile.logoUrl) {
-            try {
-              if(companyProfile.logoUrl.startsWith('data:image')){
-                 doc.addImage(companyProfile.logoUrl, 'PNG', 15, 10, 30, 15, undefined, 'FAST');
-              }
-            } catch(e) {
-                console.error("Could not add image to PDF", e);
+      const addHeaderAndTitle = (pageNumber: number) => {
+          if (pageNumber === 1) {
+            // Header
+            if (companyProfile.logoUrl && companyProfile.logoUrl.startsWith('data:image')) {
+                try {
+                    doc.addImage(companyProfile.logoUrl, 'PNG', 15, 10, 30, 15, undefined, 'FAST');
+                } catch(e) {
+                    console.error("Could not add image to PDF", e);
+                }
             }
-          }
-          doc.setFontSize(18);
-          doc.text(companyProfile.name, doc.internal.pageSize.getWidth() - 15, 15, { align: 'right' });
-          doc.setFontSize(9);
-          doc.setTextColor(100);
-          doc.text(companyProfile.address, doc.internal.pageSize.getWidth() - 15, 20, { align: 'right' });
-          doc.text(`Tel: ${companyProfile.phone} - ${companyProfile.country}`, doc.internal.pageSize.getWidth() - 15, 24, { align: 'right' });
+            doc.setFontSize(18);
+            doc.text(companyProfile.name, doc.internal.pageSize.getWidth() - 15, 15, { align: 'right' });
+            doc.setFontSize(9);
+            doc.setTextColor(100);
+            doc.text(companyProfile.address, doc.internal.pageSize.getWidth() - 15, 20, { align: 'right' });
+            doc.text(`Tel: ${companyProfile.phone} - ${companyProfile.country}`, doc.internal.pageSize.getWidth() - 15, 24, { align: 'right' });
 
-          // Title
-          doc.setFontSize(14);
-          doc.text('Reporte de Pago Detallado', 15, 40);
-          doc.setFontSize(10);
-          doc.setTextColor(100);
-          const period = `Período: ${format(dateRange.from, 'dd/MM/yyyy')} - ${format(dateRange.to, 'dd/MM/yyyy')}`;
-          doc.text(period, 15, 45);
+            // Title
+            doc.setFontSize(14);
+            doc.text('Reporte de Pago Detallado', 15, 40);
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            const period = `Período: ${format(dateRange.from, 'dd/MM/yyyy')} - ${format(dateRange.to, 'dd/MM/yyyy')}`;
+            doc.text(period, 15, 45);
+          }
       };
 
       const daysInPeriod = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
       const dayHeaders = daysInPeriod.map(day => format(day, 'dd'));
       const tableHead = [['Oferta', 'Valor', ...dayHeaders, 'Total Leads', 'Sub Total']];
 
-      let isFirstTable = true;
-      let finalY = 55;
-
-      publishersWithLeads.forEach((publisher) => {
+      publishersWithLeads.forEach((publisher, index) => {
           const offerMap = new Map(offers.map(o => [o.id, o]));
           const leadsByOfferAndDate: { [key: string]: { [key: string]: number } } = {};
           
@@ -121,42 +120,57 @@ export default function AdminReportsPage() {
           const totalPublisherLeads = publisher.leads.reduce((sum, l) => sum + l.count, 0);
           const totalPublisherAmount = tableBody.reduce((sum, row) => sum + parseFloat((row.at(-1) as string).replace('$', '')), 0);
           
-          const tableFoot = [[
-            { content: 'Total a Pagar', colSpan: dayHeaders.length + 2, styles: { halign: 'right', fontStyle: 'bold' } },
-            { content: totalPublisherLeads, styles: { halign: 'center', fontStyle: 'bold' } },
-            { content: `$${totalPublisherAmount.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold' } },
-          ]];
+          let tableFoot: any[] = [
+            [
+              { content: 'Total a Pagar (USD)', colSpan: dayHeaders.length + 2, styles: { halign: 'right', fontStyle: 'bold' } },
+              { content: totalPublisherLeads, styles: { halign: 'center', fontStyle: 'bold' } },
+              { content: `$${totalPublisherAmount.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold' } },
+            ]
+          ];
           
-          const startY = isFirstTable ? 55 : (finalY || 0) + 15;
-          isFirstTable = false;
+          const isLocalPayment = publisher.paymentMethod === 'Bolivares' || publisher.paymentMethod === 'Pesos Colombianos';
+          const exchangeRate = publisher.paymentMethod === 'Bolivares' 
+            ? companyProfile?.usdToVesRate 
+            : publisher.paymentMethod === 'Pesos Colombianos'
+            ? companyProfile?.usdToCopRate
+            : null;
+
+          if (isLocalPayment && exchangeRate) {
+              const localAmount = totalPublisherAmount * exchangeRate;
+              const localCurrency = publisher.paymentMethod === 'Bolivares' ? 'Bs.' : 'COP';
+               tableFoot.push([
+                { content: `Conversión (Tasa: ${exchangeRate.toLocaleString()})`, colSpan: dayHeaders.length + 2, styles: { halign: 'right', fontStyle: 'normal' } },
+                { content: `${localAmount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${localCurrency}`, colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
+              ]);
+          }
+
+          if (index > 0) { // Add space between publisher tables
+            yPos += 15;
+          }
 
           doc.setFontSize(12);
           doc.setFont('helvetica', 'bold');
-          doc.text(`${publisher.name}`, 15, startY - 5);
+          doc.text(`${publisher.name} (${publisher.paymentMethod})`, 15, yPos - 5);
           
           doc.autoTable({
-              startY: startY,
+              startY: yPos,
               head: tableHead,
               body: tableBody,
               foot: tableFoot,
               theme: 'striped',
+              didDrawPage: (data) => addHeaderAndTitle(data.pageNumber),
+              margin: { top: 50 },
               headStyles: { fillColor: [0, 112, 74], fontSize: 7, halign: 'center' },
-              footStyles: { fillColor: [230, 230, 230], textColor: 0, fontStyle: 'bold' },
+              footStyles: { fillColor: [230, 230, 230], textColor: 0 },
               bodyStyles: { fontSize: 8 },
               columnStyles: {
-                  0: { cellWidth: 40 }, // Offer Name
-                  1: { halign: 'right' }, // Payout
-                  [dayHeaders.length + 2]: { halign: 'center', fontStyle: 'bold' }, // Total Leads
-                  [dayHeaders.length + 3]: { halign: 'right', fontStyle: 'bold' }, // Sub Total
+                  0: { cellWidth: 40 },
+                  1: { halign: 'right' },
+                  [dayHeaders.length + 2]: { halign: 'center', fontStyle: 'bold' },
+                  [dayHeaders.length + 3]: { halign: 'right', fontStyle: 'bold' },
               },
-              didDrawPage: (data) => {
-                  if (data.pageNumber === 1) {
-                    addHeaderAndTitle();
-                  }
-              },
-              margin: { top: 50 }
           });
-          finalY = (doc as any).autoTable.previous.finalY;
+          yPos = (doc as any).autoTable.previous.finalY;
       });
 
       const from = format(dateRange.from, 'dd-MM-yy');
@@ -238,7 +252,7 @@ export default function AdminReportsPage() {
   }, [publishers, leads]);
 
 
-  const isLoading = publishersLoading || offersLoading || leadsLoading || !dateRange;
+  const isLoading = publishersLoading || offersLoading || leadsLoading || !dateRange || !companyProfile;
 
   return (
     <div className="space-y-8">
@@ -298,6 +312,7 @@ export default function AdminReportsPage() {
                     leads={publisher.leads}
                     offers={offers}
                     dateRange={dateRange}
+                    companyProfile={companyProfile}
                 />
             ))}
          </div>

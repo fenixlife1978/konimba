@@ -1,5 +1,5 @@
 'use client';
-import type { Publisher, Lead, GlobalOffer } from '@/lib/definitions';
+import type { Publisher, Lead, GlobalOffer, CompanyProfile } from '@/lib/definitions';
 import {
   Card,
   CardContent,
@@ -20,16 +20,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useMemo } from 'react';
 import { format, eachDayOfInterval } from 'date-fns';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { ReportHeader } from './report-header';
-import { Button } from '@/components/ui/button';
-import { Share2 } from 'lucide-react';
-import jsPDF from 'jspdf';
 
 interface PublisherReportCardProps {
   publisher: Publisher;
   leads: Lead[];
   offers: GlobalOffer[];
   dateRange: { from: Date; to: Date };
+  companyProfile: CompanyProfile | null;
 }
 
 type LeadsByOfferAndDate = {
@@ -43,6 +40,7 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
   leads,
   offers,
   dateRange,
+  companyProfile,
 }) => {
   const initials = publisher.name?.split(' ').map((n) => n[0]).join('') || 'N/A';
 
@@ -96,8 +94,17 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
     return { reportData, totalLeads, totalAmount };
 
   }, [leads, offers]);
-  
 
+  const isLocalPayment = publisher.paymentMethod === 'Bolivares' || publisher.paymentMethod === 'Pesos Colombianos';
+  const exchangeRate = publisher.paymentMethod === 'Bolivares' 
+    ? companyProfile?.usdToVesRate 
+    : publisher.paymentMethod === 'Pesos Colombianos'
+    ? companyProfile?.usdToCopRate
+    : null;
+  const localAmount = exchangeRate ? totalAmount * exchangeRate : 0;
+  const localCurrency = publisher.paymentMethod === 'Bolivares' ? 'VES' : 'COP';
+  const localCurrencySymbol = publisher.paymentMethod === 'Bolivares' ? 'Bs.' : 'COP';
+  
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between gap-4 bg-muted/30">
@@ -108,7 +115,7 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
             </Avatar>
             <div>
               <CardTitle className="text-xl">{publisher.name}</CardTitle>
-              <CardDescription>{publisher.email}</CardDescription>
+              <CardDescription>{publisher.email} - ({publisher.paymentMethod})</CardDescription>
             </div>
         </div>
       </CardHeader>
@@ -159,12 +166,22 @@ export const PublisherReportCard: React.FC<PublisherReportCardProps> = ({
             </TableBody>
              <UiTableFooter>
                 <TableRow>
-                    <TableCell colSpan={daysInPeriod.length + 2} className="text-right font-bold text-lg">Total a Pagar</TableCell>
-                    <TableCell className="text-right font-bold text-lg">{totalLeads}</TableCell>
+                    <TableCell colSpan={daysInPeriod.length + 2} className="text-right font-bold text-lg">Total a Pagar (USD)</TableCell>
+                    <TableCell className="text-right font-bold">{totalLeads}</TableCell>
                     <TableCell className="text-right font-bold text-lg pr-4">
                         {totalAmount.toLocaleString('es-US', { style: 'currency', currency: 'USD' })}
                     </TableCell>
                 </TableRow>
+                {isLocalPayment && exchangeRate && (
+                  <TableRow>
+                      <TableCell colSpan={daysInPeriod.length + 2} className="text-right font-medium text-muted-foreground">
+                          Conversión a {localCurrency} (Tasa: {exchangeRate.toLocaleString()})
+                      </TableCell>
+                      <TableCell colSpan={2} className="text-right font-bold text-lg pr-4">
+                          {localAmount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {localCurrencySymbol}
+                      </TableCell>
+                  </TableRow>
+                )}
             </UiTableFooter>
             </Table>
             <ScrollBar orientation="horizontal" />
