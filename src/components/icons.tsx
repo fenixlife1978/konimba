@@ -10,21 +10,22 @@ export function KonimPayLogo(props: SVGProps<SVGSVGElement> & { className?: stri
   const { className, ...rest } = props;
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
+  const isAdmin = user?.email === 'faubriciosanchez1@gmail.com';
   
   const settingsRef = useMemoFirebase(() => {
-    // Only create the reference if firestore is available and user loading is complete
-    if (firestore && !isUserLoading && user) {
+    // Only create the reference if firestore is available, user loading is complete, and the user is an admin
+    if (firestore && !isUserLoading && isAdmin) {
       return doc(firestore, 'company_profile', 'settings');
     }
     return null;
-  }, [firestore, isUserLoading, user]);
+  }, [firestore, isUserLoading, isAdmin]);
 
   const { data: companyProfile, isLoading: isProfileLoading } = useDoc<CompanyProfile>(settingsRef);
   
   const isLoading = isUserLoading || isProfileLoading;
   const logoUrl = !isLoading && companyProfile ? companyProfile.logoUrl : null;
 
-  if (logoUrl) {
+  if (isAdmin && logoUrl) {
     return (
       <div className={cn("relative overflow-hidden", className)}>
          <Image
