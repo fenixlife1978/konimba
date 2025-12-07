@@ -73,7 +73,7 @@ export function RegisterForm() {
         email: values.email,
         createdAt: serverTimestamp(),
         status: 'Activo',
-        // Add other default publisher fields here if needed
+        paymentMethod: 'Paypal',
       });
       
       toast({

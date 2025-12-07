@@ -74,12 +74,9 @@ service cloud.firestore {
      * @deny An authenticated user tries to get another user's profile. Listing all publishers is forbidden for non-admins.
      */
     match /publishers/{publisherId} {
-      allow read, write: if isAdmin();
-      allow get: if isOwner(publisherId);
-      allow list: if false; // List is covered by admin rule above.
-      allow create: if isOwner(publisherId) && request.resource.data.id == publisherId;
-      allow update: if isExistingOwner(publisherId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(publisherId);
+      allow read, update, delete: if isOwner(publisherId) || isAdmin();
+      allow create: if isOwner(publisherId);
+      allow list: if isAdmin();
     }
 
     /**
@@ -89,12 +86,7 @@ service cloud.firestore {
      * @deny A user tries to access offers belonging to a different publisher.
      */
     match /publishers/{publisherId}/offers/{offerId} {
-      allow read, write: if isAdmin();
-      allow get: if isOwner(publisherId);
-      allow list: if isOwner(publisherId);
-      allow create: if isOwner(publisherId) && hasValidPublisherRelationOnCreate(publisherId);
-      allow update: if isExistingOwner(publisherId) && isPublisherRelationImmutable();
-      allow delete: if isExistingOwner(publisherId);
+       allow read, write: if isOwner(publisherId) || isAdmin();
     }
     
     /**
@@ -130,18 +122,14 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages payments for a specific publisher. Admin has full access. Access is tied to the parent publisher for others.
+     * @description Manages payments for a specific publisher. This path should generally not be used,
+     * as payments are in a top-level collection. Kept for legacy/specific cases. Access is tied to the publisher.
      * @path /publishers/{publisherId}/payments/{paymentId}
      * @allow Admin can do anything. A user can manage payments associated with their publisher ID.
      * @deny A user tries to update a payment document for another publisher.
      */
     match /publishers/{publisherId}/payments/{paymentId} {
-      allow read, write: if isAdmin();
-      allow get: if isOwner(publisherId);
-      allow list: if isOwner(publisherId);
-      allow create: if isOwner(publisherId) && hasValidPublisherRelationOnCreate(publisherId);
-      allow update: if isExistingOwner(publisherId) && isPublisherRelationImmutable();
-      allow delete: if isExistingOwner(publisherId);
+      allow read, write: if isOwner(publisherId) || isAdmin();
     }
 
     /**
