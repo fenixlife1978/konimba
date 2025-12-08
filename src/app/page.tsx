@@ -14,7 +14,7 @@ function WelcomeContent() {
       if (user.email === 'faubriciosanchez1@gmail.com') {
         redirect('/admin/dashboard');
       } else {
-        redirect('/dashboard');
+        redirect('/dashboard/dashboard');
       }
     }
   }, [user, isUserLoading]);
@@ -41,7 +41,7 @@ function WelcomeContent() {
             Ya has iniciado sesión. Serás redirigido en un momento.
         </p>
          <Button asChild size="lg" className="font-bold text-base">
-            <Link href={user.email === 'faubriciosanchez1@gmail.com' ? '/admin/dashboard' : '/dashboard'}>Ir al Panel</Link>
+            <Link href={user.email === 'faubriciosanchez1@gmail.com' ? '/admin/dashboard' : '/dashboard/dashboard'}>Ir al Panel</Link>
         </Button>
       </div>
     )

@@ -12,7 +12,7 @@ export default function DashboardRootRedirect() {
   useEffect(() => {
     if (!isUserLoading) {
       if (user) {
-        // Once we know the user is loaded, redirect to the actual dashboard page.
+        // Redirect to the publisher dashboard page.
         redirect('/dashboard/dashboard');
       } else {
         // If for some reason the user is not authenticated, send them to login.
