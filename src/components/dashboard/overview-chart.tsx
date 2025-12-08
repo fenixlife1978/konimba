@@ -3,18 +3,18 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recha
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 
 const data = [
-  { name: 'Ene', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Feb', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Mar', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Abr', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'May', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Jun', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Jul', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Ago', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Sep', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Oct', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Nov', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Dic', total: Math.floor(Math.random() * 5000) + 1000 },
+  { name: 'Ene', total: 1100 },
+  { name: 'Feb', total: 2800 },
+  { name: 'Mar', total: 1500 },
+  { name: 'Abr', total: 3200 },
+  { name: 'May', total: 1800 },
+  { name: 'Jun', total: 4500 },
+  { name: 'Jul', total: 2600 },
+  { name: 'Ago', total: 3900 },
+  { name: 'Sep', total: 2100 },
+  { name: 'Oct', total: 4200 },
+  { name: 'Nov', total: 2400 },
+  { name: 'Dic', total: 4900 },
 ];
 
 const chartConfig = {
@@ -26,7 +26,7 @@ const chartConfig = {
 
 export function OverviewChart() {
   return (
-    <ChartContainer config={chartConfig} className="h-[350px] w-full">
+    <ChartContainer config={chartConfig} className="h-[350px] w-full" id="overview-chart">
       <ResponsiveContainer>
         <BarChart data={data}>
           <XAxis
