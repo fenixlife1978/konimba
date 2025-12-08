@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Tu configuración actual de Firebase
+// Tu configuración de Firebase, exportada para que otros módulos puedan acceder a ella si es necesario.
 export const firebaseConfig = {
   apiKey: "AIzaSyB6OQZvVklwXyjL0Zy1pcO8JwQvi2jfvH0",
   authDomain: "studio-1531665135-d603d.firebaseapp.com",
@@ -13,13 +13,15 @@ export const firebaseConfig = {
 };
 
 // 1. Inicialización Única de la Aplicación
-// Esto previene errores de re-inicialización si la función se llama varias veces.
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Esto previene el error "Firebase App named '[DEFAULT]' already exists" en Next.js.
+// Se usa getApps().length para verificar si ya existe una instancia.
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // 2. Exportar los Servicios (Módulos)
-// Exportamos las instancias de los servicios que probablemente necesitarás.
+// Exportamos las instancias de los servicios para un uso modular en toda la aplicación.
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 // export const storage = getStorage(app); // Descomenta si usas Cloud Storage
 
-export default app;
+// Se elimina la exportación por defecto (export default app;) 
+// para forzar el uso de exportaciones nombradas, lo que mejora la claridad y el bundling.
